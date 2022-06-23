@@ -1,4 +1,4 @@
 # oo_amxx
-Object-Oriented Simulation for AMXXPawn
-Idea drafted with BB.O.
+Object-Oriented Simulation for AMXXPawn<br>
+Idea drafted with BB.O.<br>
 Author: holla & BB.O.
