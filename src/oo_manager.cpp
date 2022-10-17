@@ -45,24 +45,27 @@ namespace oo
 			return OBJ_NULL;
 
 		std::shared_ptr<Object> pobj = std::make_shared<Object>(isa);
-
 		std::shared_ptr<Class> pcurrent(isa);
-		do
+
+		while (pcurrent != nullptr)
 		{
-			for (auto &&mi : pcurrent->meta_ivars)
+			for (auto&& mi : pcurrent->ivars)
 			{
-				auto &&mi_name = mi.first;
-				auto &&mi_size = mi.second;
+				auto&& mi_name = mi.first;
+				auto&& mi_size = mi.second;
 				pobj->ivars.try_emplace(mi_name, mi_size);
 			}
-		} while ((pcurrent = pcurrent->super_class.lock()) != nullptr);
+
+			pcurrent = pcurrent->super_class.lock();
+		}
+
 		auto obj_iter = m_objects.insert(std::move(pobj)).first;
 		return m_objects.hash_function()(*obj_iter);
 	}
 
 	void Manager::DeleteObject(ObjectHash object_hash)
 	{
-		std::size_t bucket = object_hash % m_objects.bucket_count();
+		//std::size_t bucket = object_hash % m_objects.bucket_count();
 		auto is_hash = [&](auto &&pobj) { return object_hash == m_objects.hash_function()(pobj); };
 		std::erase_if(m_objects, is_hash);
 	}
@@ -72,6 +75,7 @@ namespace oo
 		auto class_iter = m_classes.find(std::string{ class_name });
 		if (class_iter == m_classes.end())
 			return std::weak_ptr<Class>();
+
 		return class_iter->second;
 	}
 
@@ -81,6 +85,7 @@ namespace oo
 		auto pobj_iter = std::find_if(m_objects.begin(bucket), m_objects.end(bucket), [&](auto &&pobj) { return object_hash == m_objects.hash_function()(pobj); });
 		if (pobj_iter == m_objects.end(bucket))
 			return std::weak_ptr<Object>();
+
 		return (*pobj_iter);
 	}
 
@@ -88,13 +93,18 @@ namespace oo
 	{
 		if (cl.expired())
 			return nullptr;
+
 		std::shared_ptr<Class> pcurrent = cl.lock();
-		do
+
+		while (pcurrent != nullptr)
 		{
 			auto ctor_iter = pcurrent->ctors.find(num_args);
 			if (ctor_iter != pcurrent->ctors.end())
 				return &ctor_iter->second;
-		} while ((pcurrent = pcurrent->super_class.lock()) != nullptr);
+
+			pcurrent = pcurrent->super_class.lock();
+		}
+
 		return nullptr;
 	}
 
@@ -102,13 +112,18 @@ namespace oo
 	{
 		if (cl.expired())
 			return nullptr;
+
 		std::shared_ptr<Class> pcurrent = cl.lock();
-		do
+
+		while (pcurrent != nullptr)
 		{
 			auto mthd_iter = pcurrent->methods.find(std::string{ name });
 			if (mthd_iter != pcurrent->methods.end())
 				return &mthd_iter->second;
-		} while ((pcurrent = pcurrent->super_class.lock()) != nullptr);
+
+			pcurrent = pcurrent->super_class.lock();
+		}
+
 		return nullptr;
 	}
 

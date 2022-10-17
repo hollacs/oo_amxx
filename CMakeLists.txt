@@ -17,9 +17,9 @@ set_target_properties (oo_amxx
 target_include_directories (oo_amxx
 	PRIVATE
 		${PROJECT_SOURCE_DIR}/public
+		${PROJECT_SOURCE_DIR}/public/amtl
 		${PROJECT_SOURCE_DIR}/public/sdk
 		${PROJECT_SOURCE_DIR}/public/memtools
-		${PROJECT_SOURCE_DIR}/public/amtl
 		${PROJECT_SOURCE_DIR}/inc
 		${PROJECT_SOURCE_DIR}/src
 )
@@ -31,7 +31,6 @@ target_compile_definitions (oo_amxx
 		_CRT_SECURE_NO_WARNINGS
 )
 
-#target_compile_options(oo_amxx 
-#    PRIVATE
-#        "/wd4996;"
-#)
+add_custom_command(TARGET oo_amxx POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:oo_amxx> C:/Server/cs16/cstrike/addons/amxmodx/modules/${targetfile}
+)

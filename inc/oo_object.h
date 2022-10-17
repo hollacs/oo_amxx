@@ -20,7 +20,7 @@
 #define OO_OBJECT_H
 
 
-#include "amxxmodule.h"
+#include "sdk\amxxmodule.h"
 
 #include <memory>
 

@@ -29,20 +29,20 @@ void OnAmxxAttach(void)
 {
 	static const AMX_NATIVE_INFO oo_natives[] =
 	{
-		{ "oo_decl_class",	oo::natives::native_decl_class },
-		{ "oo_decl_ctor",	oo::natives::native_decl_ctor },
-		{ "oo_decl_dtor",	oo::natives::native_decl_dtor },
-		{ "oo_decl_msg",	oo::natives::native_decl_msg },
-		{ "oo_decl_ivar",	oo::natives::native_decl_ivar },
+		{ "oo_class",	oo::natives::native_decl_class },
+		{ "oo_ctor",	oo::natives::native_decl_ctor },
+		{ "oo_dtor",	oo::natives::native_decl_dtor },
+		{ "oo_mthd",	oo::natives::native_decl_msg },
+		{ "oo_var",		oo::natives::native_decl_ivar },
 
 		{ "oo_isa",			oo::natives::native_isa },
 		{ "oo_subclass_of",	oo::natives::native_subclass_of	},
 
 		{ "oo_new",			oo::natives::native_new },
 		{ "oo_delete",		oo::natives::native_delete },
-		{ "oo_send",		oo::natives::native_send },
-		{ "oo_read",		oo::natives::native_read },
-		{ "oo_write",		oo::natives::native_write },
+		{ "oo_call",		oo::natives::native_send },
+		{ "oo_get",			oo::natives::native_read },
+		{ "oo_set",			oo::natives::native_write },
 
 		{ "oo_this",		oo::natives::native_this },
 
@@ -50,7 +50,8 @@ void OnAmxxAttach(void)
 		{ "oo_super_ctor",	oo::natives::native_super_ctor },
 
 		{ "oo_class_exists",	oo::natives::native_class_exists },
-		{ "oo_get_class_name",	oo::natives::native_get_class_name },
+		{ "oo_object_exists",	oo::natives::native_object_exists },
+		{ "oo_get_classname",	oo::natives::native_get_class_name },
 
 		{ nullptr, nullptr }
 	};
@@ -96,7 +97,7 @@ void OnPluginsLoaded(void)
 		{
 			MF_PrintSrvConsole("              %s@%d(", cl.first.c_str(), ct.first);
 			int count = 0;
-			for (auto && arg : ct.second.arg_sizes)
+			for (auto && arg : ct.second.args)
 			{
 				if (count++ > 0) MF_PrintSrvConsole(", ");
 				MF_PrintSrvConsole(std::to_string(arg).c_str());
@@ -109,7 +110,7 @@ void OnPluginsLoaded(void)
 		{
 			MF_PrintSrvConsole("              %s@%s(", cl.first.c_str(), m.first.c_str());
 			int count = 0;
-			for (auto && arg : m.second.arg_sizes)
+			for (auto && arg : m.second.args)
 			{
 				if (count++ > 0) MF_PrintSrvConsole(", ");
 				MF_PrintSrvConsole(std::to_string(arg).c_str());
@@ -120,7 +121,7 @@ void OnPluginsLoaded(void)
 		//::MessageBoxA(nullptr, "c", cl.first.c_str(), MB_OK);
 
 		MF_PrintSrvConsole("         <IVars>\n");
-		for (auto &&iv : cl.second->meta_ivars)
+		for (auto &&iv : cl.second->ivars)
 			MF_PrintSrvConsole("              %s@%s[%d]\n", cl.first.c_str(), iv.first.c_str(), iv.second);
 
 		//::MessageBoxA(nullptr, "d", cl.first.c_str(), MB_OK);
@@ -130,7 +131,7 @@ void OnPluginsLoaded(void)
 void OnPluginsUnloaded()
 {
 	oo::Manager::Instance()->Clear();
-	MF_PrintSrvConsole("OO Release memory\n");
+	//MF_PrintSrvConsole("OO Release memory\n");
 }
 
 void OnAmxxDetach()

@@ -17,12 +17,10 @@
 // 
 
 #include <utility>
+#include <algorithm>
 
 #include <cmath>
 #include <cstring>
-
-#include "assembly_create.h"
-#include "memory_.h"
 
 #include "oo_natives.h"
 
@@ -34,149 +32,6 @@
 
 namespace oo::natives
 {
-	int AddMethod(AMX *amx, const char* callback, const ArgList* args=nullptr)
-	{
-		AssemblyCreate assembly;
-		assembly.add<Inst_Enter>();
-
-		int num_args = (args == nullptr) ? 0 : args->size();
-		int start = num_args - 1;
-		int end = 0;
-
-		assembly.add<Inst_Push_VAL>()->set_long(FP_DONE);
-
-		for (int i = start; i >= end; i--)
-		{
-			cell type = 0;
-
-			switch (args->at(i))
-			{
-			case OO_CELL:
-				type = FP_CELL;
-				break;
-
-			case OO_BYREF:
-				type = FP_CELL_BYREF;
-				break;
-
-			case OO_STRING:
-				type = FP_STRING;
-				break;
-
-			case OO_STRING_EX:
-				type = FP_STRINGEX;
-				break;
-
-			default:
-				if (args->at(i) > OO_CELL) // ARRAY
-					type = FP_ARRAY;
-				
-				break;
-			}
-
-			assembly.add<Inst_Push_VAL>()->set_long(type);
-		}
-
-		assembly.add<Inst_Push_VAL>()->set_long((long)callback);
-		assembly.add<Inst_Push_VAL>()->set_long((long)amx);
-
-		Inst_Call* inst_call = assembly.add<Inst_Call>();
-
-		assembly.add<Inst_Add_ESP_Val>()->set_inc(4 * (num_args + 3)); // real + 3?
-		assembly.add<Inst_Leave>();
-		assembly.add<Inst_Ret>();
-
-		int size = assembly.size();
-
-		unsigned char* block = assembly.get_block();
-
-		inst_call->set_address((long)MF_RegisterSPForwardByName);
-
-		Memory m;
-		m.make_writable_executable((long)block, size);
-
-		return reinterpret_cast<long(*)()>(block)();
-	}
-
-	cell ExecuteMethod(AMX* amx, cell* params, int8_t num_params, int32_t forward_id, ObjectHash this_hash, const ArgList* args = nullptr, int8_t start_param = 0)
-	{
-		Manager::Instance()->PushThis(this_hash);
-
-		int num_args = (args == nullptr) ? 0 : args->size();
-
-		AssemblyCreate assembly;
-		assembly.add<Inst_Enter>();
-
-		std::vector<std::pair<std::string, int>> str_arr;
-		str_arr.reserve(num_args);
-
-		int start = num_args - 1;
-		int end = 0;
-
-		for (int i = start; i >= end; i--)
-		{
-			int p = i + start_param;
-			int8_t type = args->at(i);
-
-			switch (type)
-			{
-			case OO_CELL:
-				assembly.add<Inst_Push_VAL>()->set_long(MF_GetAmxAddr(amx, params[p])[0]);
-				break;
-
-			case OO_BYREF:
-				assembly.add<Inst_Push_VAL>()->set_long((long)&MF_GetAmxAddr(amx, params[p])[0]);
-				break;
-
-			case OO_STRING:
-			case OO_STRING_EX:
-			{
-				int len = 0;
-				str_arr.push_back(std::make_pair(MF_GetAmxString(amx, params[p], 0, &len), type == OO_STRING ? 0 : p));
-				assembly.add<Inst_Push_VAL>()->set_long((long)(str_arr.back().first.data()));
-				break;
-			}
-
-			default:
-				if (type > OO_CELL)
-					assembly.add<Inst_Push_VAL>()->set_long(MF_PrepareCellArrayA(MF_GetAmxAddr(amx, params[p]), type, true));
-
-				break;
-			}
-		}
-
-		assembly.add<Inst_Push_VAL>()->set_long((long)forward_id);
-
-		Inst_Call* inst_call = assembly.add<Inst_Call>();
-
-		assembly.add<Inst_Add_ESP_Val>()->set_inc(4 * (num_args + 1));
-		assembly.add<Inst_Leave>();
-		assembly.add<Inst_Ret>();
-
-		int size = assembly.size();
-
-		unsigned char* block = assembly.get_block();
-
-		inst_call->set_address((long)MF_ExecuteForward);
-
-		Memory m;
-		m.make_writable_executable((long)block, size);
-
-		cell ret = reinterpret_cast<long(*)()>(block)();
-
-		// copyback string
-		for (auto &e : str_arr)
-		{
-			int p = e.second;
-			if (p > 0)
-				MF_SetAmxString(amx, params[p], e.first.data(), strlen(e.first.data()));
-		}
-
-		Manager::Instance()->PopThis();
-
-		return ret;
-	}
-
 	// native oo_decl_class(const class[], const base[] = "", const version_no = OO_VERSION_NUM);
 	// e.g.
 	// oo_decl_class("Base",	"");
@@ -242,12 +97,6 @@ namespace oo::natives
 
 		Ctor ctor;
 		{
-			if (MF_AmxFindPublic(amx, public_name.c_str(), &ctor.public_index) == AMX_ERR_NOTFOUND)
-			{
-				MF_LogError(amx, AMX_ERR_NATIVE, "%s(...): Public not found", public_name.c_str());
-				return 0;
-			}
-
 			uint8_t num_args = params[0] / sizeof(cell) - 2;
 			//ctor.arg_sizes.resize(num_args);
 			for (uint8_t i = 1u; i <= num_args; i++)
@@ -260,13 +109,17 @@ namespace oo::natives
 				}
 
 
-				ctor.arg_sizes.push_back(size);
+				ctor.args.push_back(size);
 			}
 
-			ctor.public_index = AddMethod(amx, public_name.c_str(), &ctor.arg_sizes);
-		}
+			ctor.forward_index = utils::AddMethod(amx, public_name.c_str(), &ctor.args);
 
-		//utils::CheckAndLoadAmxScript(ctor.plugin_index);
+			if (ctor.forward_index <= NO_FORWARD)
+			{
+				MF_LogError(amx, AMX_ERR_NATIVE, "%s(...): Public not found", public_name.c_str());
+				return 0;
+			}
+		}
 
 		pclass->AddCtor(std::move(ctor));
 		return 1;	// success
@@ -301,16 +154,14 @@ namespace oo::natives
 
 		Dtor dtor;
 		{
-			if (MF_AmxFindPublic(amx, public_name.c_str(), &dtor.public_index) == AMX_ERR_NOTFOUND)
+			dtor.forward_index = utils::AddMethod(amx, public_name.c_str());
+
+			if (dtor.forward_index <= NO_FORWARD)
 			{
-				MF_LogError(amx, AMX_ERR_NATIVE, "%s(): Public not found", public_name.c_str());
+				MF_LogError(amx, AMX_ERR_NATIVE, "%s(...): Public not found", public_name.c_str());
 				return 0;
 			}
-
-			dtor.public_index = AddMethod(amx, public_name.c_str());
 		}
-
-		//utils::CheckAndLoadAmxScript(dtor.plugin_index);
 
 		pclass->AssignDtor(std::move(dtor));
 		return 1;	// success
@@ -347,12 +198,6 @@ namespace oo::natives
 
 		Method mthd;
 		{
-			if (MF_AmxFindPublic(amx, public_name.c_str(), &mthd.public_index) == AMX_ERR_NOTFOUND)
-			{
-				MF_LogError(amx, AMX_ERR_NATIVE, "%s(...): Public not found", public_name.c_str());
-				return 0;
-			}
-
 			//::MessageBoxA(nullptr, public_name.c_str(), "2", MB_OK);
 
 			uint8_t num_args = params[0] / sizeof(cell) - 2;
@@ -366,10 +211,16 @@ namespace oo::natives
 					return 0;	// no success
 				}
 
-				mthd.arg_sizes.push_back(size);
+				mthd.args.push_back(size);
 			}
 
-			mthd.public_index = AddMethod(amx, public_name.c_str(), &mthd.arg_sizes);
+			mthd.forward_index = utils::AddMethod(amx, public_name.c_str(), &mthd.args);
+
+			if (mthd.forward_index <= NO_FORWARD)
+			{
+				MF_LogError(amx, AMX_ERR_NATIVE, "%s(...): Public not found", public_name.c_str());
+				return 0;
+			}
 		}
 
 		pclass->AddMethod(_name, std::move(mthd));
@@ -410,13 +261,13 @@ namespace oo::natives
 	}
 
 
-	// native oo_isa(Obj:this, const super[]);
+	// native oo_isa(Obj:this, const class[], bool:superclass);
 	// e.g.
 	// oo_isa(derived, "Base");
 	cell AMX_NATIVE_CALL native_isa(AMX *amx, cell params[])
 	{
 		ObjectHash _this		= params[1];
-		std::string_view _super	= MF_GetAmxString(amx, params[2], 0, nullptr);
+		std::string_view _class	= MF_GetAmxString(amx, params[2], 0, nullptr);
 
 		std::shared_ptr<Object> pobj = Manager::Instance()->ToObject(_this).lock();
 		if (pobj == nullptr)
@@ -425,14 +276,22 @@ namespace oo::natives
 			return -1;	// error
 		}
 
-		std::weak_ptr<Class> super = Manager::Instance()->ToClass(_super);
-		if (super.expired())
+		std::weak_ptr<Class> cls = Manager::Instance()->ToClass(_class);
+		if (cls.expired())
 		{
-			MF_LogError(amx, AMX_ERR_NATIVE, "Super class (%s) not found", _super.data());
+			MF_LogError(amx, AMX_ERR_NATIVE, "Class (%s) not found", _class.data());
 			return -1;	// error
 		}
 
-		return pobj->isa.lock()->IsSubclassOf(super) ? 1 : 0;
+		if (params[3])
+		{
+			if (pobj->isa.lock()->IsClass(cls))
+				return 1;
+
+			return pobj->isa.lock()->IsSubclassOf(cls) ? 1 : 0;
+		}
+
+		return pobj->isa.lock()->IsClass(cls) ? 1 : 0;
 	}
 
 
@@ -496,7 +355,7 @@ namespace oo::natives
 		}
 		else
 		{
-			ExecuteMethod(amx, params, params[0] / sizeof(cell) + 1, result->public_index, hash, &result->arg_sizes, 2);
+			utils::ExecuteMethod(amx, params, params[0] / sizeof(cell) + 1, result->forward_index, hash, &result->args, 2);
 		}
 
 		return hash;
@@ -524,10 +383,10 @@ namespace oo::natives
 		do
 		{
 			auto && dtor = pcurrent->dtor;
-			if (dtor.public_index != NO_PUBLIC)
+			if (dtor.forward_index > NO_FORWARD)
 			{
 				// call destructors
-				ExecuteMethod(amx, params, params[0] / sizeof(cell) + 1, dtor.public_index, _this);
+				utils::ExecuteMethod(amx, params, params[0] / sizeof(cell) + 1, dtor.forward_index, _this);
 			}
 		} while ((pcurrent = pcurrent->super_class.lock()) != nullptr);
 
@@ -575,6 +434,7 @@ namespace oo::natives
 			}
 
 			_name = _name.substr(class_limiter_pos + 1);
+			pisa = psuper;
 		}
 
 		auto &&classes = Manager::Instance()->GetClasses();
@@ -588,14 +448,14 @@ namespace oo::natives
 		}
 
 		uint8_t num_args = params[0] / sizeof(cell) - 2;
-		if (num_args != result->arg_sizes.size())
+		if (num_args != result->args.size())
 		{
 			auto &&class_name = std::find_if(classes.begin(), classes.end(), [&](auto &&pair) { return pair.second.get() == pisa.get(); })->first;
-			MF_LogError(amx, AMX_ERR_NATIVE, "Call of %s@%s: #args doesn't match (expected: %d, now: %d)", class_name.c_str(), _name.data(), result->arg_sizes.size(), num_args);
+			MF_LogError(amx, AMX_ERR_NATIVE, "Call of %s@%s: #args doesn't match (expected: %d, now: %d)", class_name.c_str(), _name.data(), result->args.size(), num_args);
 			return 0;
 		}
 
-		cell ret = ExecuteMethod(amx, params, params[0] / sizeof(cell) + 1, result->public_index, _this, &result->arg_sizes, 3);
+		cell ret = utils::ExecuteMethod(amx, params, params[0] / sizeof(cell) + 1, result->forward_index, _this, &result->args, 3);
 		return ret;
 	}
 
@@ -678,7 +538,7 @@ namespace oo::natives
 				std::size_t to_end		= *MF_GetAmxAddr(amx, params[7]);
 				std::size_t to_diff		= to_end - to_begin;
 
-				std::size_t cell_count	= max(0, min(from_diff, to_diff));
+				std::size_t cell_count	= std::clamp(from_diff, size_t(0), to_diff);
 
 				if ((from_begin + cell_count) > ivar_size)
 				{
@@ -772,7 +632,7 @@ namespace oo::natives
 			std::size_t from_end	= *MF_GetAmxAddr(amx, params[7]);
 			std::size_t from_diff	= (from_end == 0) ? ivar_size : from_end - from_begin;
 
-			std::size_t cell_count	= max(0, min(from_diff, to_diff));
+			std::size_t cell_count	= std::clamp(from_diff, size_t(0), to_diff);
 
 			if ((to_begin + cell_count) > ivar_size)
 			{
@@ -817,10 +677,22 @@ namespace oo::natives
 
 		std::shared_ptr<Class> pclass = Manager::Instance()->ToClass(_class).lock();
 		if (pclass == nullptr)
-		{
 			return 0;	// no success
-		}
 		
+		return 1;
+	}
+
+	cell AMX_NATIVE_CALL native_object_exists(AMX* amx, cell params[])
+	{
+		ObjectHash _this = params[1];
+
+		if (_this == OBJ_NULL)
+			return 0;
+
+		std::shared_ptr<Object> pobj = Manager::Instance()->ToObject(_this).lock();
+		if (pobj == nullptr)
+			return 0;	// no success
+
 		return 1;
 	}
 
@@ -881,10 +753,9 @@ namespace oo::natives
 		uint8_t num_args = params[0] / sizeof(cell) - 1;
 
 		auto result = Manager::Instance()->FindCtor(psuper, num_args);
-		auto&& public_index = result->public_index;
-		auto&& arg_sizes = result->arg_sizes;
+		auto&& forward_index = result->forward_index;
 
-		if (public_index == NO_PUBLIC)
+		if (forward_index <= NO_FORWARD)
 		{
 			if (num_args != 0)
 			{
@@ -896,7 +767,7 @@ namespace oo::natives
 		}
 		else
 		{
-			ExecuteMethod(amx, params, params[0] / sizeof(cell) + 1, result->public_index, this_hash, &result->arg_sizes, 2);
+			utils::ExecuteMethod(amx, params, params[0] / sizeof(cell) + 1, result->forward_index, this_hash, &result->args, 2);
 		}
 
 		return 1;

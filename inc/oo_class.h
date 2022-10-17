@@ -32,45 +32,41 @@
 
 namespace oo
 {
-	using AmxxPublic	= int;
-	constexpr AmxxPublic NO_PUBLIC = ~0;
-	using AmxxPlugin	= int;
-	using ArgList		= std::vector<int8_t>;
+	using AmxxForward = int;
+	constexpr AmxxForward NO_FORWARD = -1;
+	using ArgList	  = std::vector<int8_t>;
 
 	struct Ctor
 	{
-		//AmxxPlugin	plugin_index;
-		AmxxPublic	public_index;
-		ArgList		arg_sizes;
+		AmxxForward	forward_index;
+		ArgList		args;
 	};
 
 	struct Dtor
 	{
-		//AmxxPlugin	plugin_index;
-		AmxxPublic	public_index;
+		AmxxForward	forward_index;
 	};
 
 	struct Method
 	{
-		//AmxxPlugin	plugin_index;
-		AmxxPublic	public_index;
-		ArgList		arg_sizes;
+		AmxxForward	forward_index;
+		ArgList		args;
 	};
 
-	struct Class
+	struct Class : std::enable_shared_from_this<Class>
 	{
 		std::weak_ptr<Class>						super_class;
 		int32_t										version;
 		int32_t										instance_size;
 
 		std::unordered_map<uint8_t, Ctor>			ctors;			// <key: #args>
-		Dtor										dtor;
+		Dtor										dtor;			// only one destructor
 
-		std::unordered_map<std::string, int8_t>		meta_ivars;		// <key: ivar name,		value: ivar size>
+		std::unordered_map<std::string, int8_t>		ivars;			// <key: ivar name,		value: ivar size>
 		std::unordered_map<std::string, Method>		methods;		// <key: method name>
 
 		Class()
-			: version(0), instance_size(0), dtor({ NO_PUBLIC })
+			: version(0), instance_size(0), dtor(NO_FORWARD)
 		{}
 
 		Class(int32_t version, std::weak_ptr<Class> super_class)
@@ -83,7 +79,7 @@ namespace oo
 			else
 				this->instance_size = 0;
 
-			this->dtor.public_index = NO_PUBLIC;
+			this->dtor.forward_index = NO_FORWARD;
 		}
 
 		Class(int32_t version)
@@ -91,7 +87,7 @@ namespace oo
 
 		void AddCtor(Ctor ctor)
 		{
-			std::size_t size = ctor.arg_sizes.size();
+			std::size_t size = ctor.args.size();
 			this->ctors.insert(std::make_pair(size, std::move(ctor)));
 		}
 
@@ -103,7 +99,7 @@ namespace oo
 		void AddIvar(std::string_view name, int8_t size)
 		{
 			this->instance_size += size;
-			this->meta_ivars.insert(std::make_pair(name, size));
+			this->ivars.insert(std::make_pair(name, size));
 		}
 
 		void AddMethod(std::string_view name, Method mthd)
@@ -111,16 +107,22 @@ namespace oo
 			this->methods.insert(std::make_pair(name, std::move(mthd)));
 		}
 
+		bool IsClass(std::weak_ptr<Class> _class)
+		{
+			assert(!_class.expired());
+
+			return shared_from_this() == _class.lock();
+		}
+
 		bool IsSubclassOf(std::weak_ptr<Class> super)
 		{
 			assert(!super.expired());
 
-			std::shared_ptr<Class> psuper(super);
 			std::shared_ptr<Class> pcurrent = this->super_class.lock();
 
 			while (pcurrent != nullptr)
 			{
-				if (pcurrent == psuper)
+				if (pcurrent == super.lock())
 					return true;
 
 				pcurrent = pcurrent->super_class.lock();
