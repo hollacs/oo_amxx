@@ -24,7 +24,7 @@
 
 #include <stack>
 #include <unordered_map>
-#include <unordered_set>
+//#include <unordered_set>
 #include <vector>
 
 #include <cstddef>
@@ -60,7 +60,7 @@ namespace oo
 		ObjectHash				PopThis();
 
 		const std::unordered_map<std::string, std::shared_ptr<Class>>	&GetClasses(void) const	{ return m_classes; }
-		const std::unordered_set<std::shared_ptr<Object>>				&GetObjects(void) const { return m_objects; }
+		const std::unordered_map<size_t, std::shared_ptr<Object>>				&GetObjects(void) const { return m_objects; }
 
 		std::string_view GetObjectClassName(std::weak_ptr<Object> object) const;
 
@@ -72,7 +72,7 @@ namespace oo
 	private:
 
 		std::unordered_map<std::string, std::shared_ptr<Class>>	m_classes;
-		std::unordered_set<std::shared_ptr<Object>>				m_objects;
+		std::unordered_map<size_t, std::shared_ptr<Object>>		m_objects;
 
 		std::stack<ObjectHash>	m_these;
 	};

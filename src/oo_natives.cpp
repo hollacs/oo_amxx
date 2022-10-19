@@ -61,7 +61,7 @@ namespace oo::natives
 			return 0;	// no success
 		}
 
-		Class new_class(_version_no, super);
+		Class new_class(_version_no, super, std::string{_class});
 		Manager::Instance()->NewClass(_class, std::move(new_class));
 
 		return 1;	// success

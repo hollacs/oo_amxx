@@ -11,7 +11,7 @@ add_library (oo_amxx SHARED "public/sdk/amxxmodule.cpp" "public/sdk/amxxmodule.h
 # TODO: Add tests and install targets if needed.
 set_target_properties (oo_amxx
 	PROPERTIES
-		CXX_STANDARD 20
+		CXX_STANDARD 17
 )
 
 target_include_directories (oo_amxx

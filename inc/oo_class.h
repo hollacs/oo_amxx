@@ -55,6 +55,7 @@ namespace oo
 
 	struct Class : std::enable_shared_from_this<Class>
 	{
+		std::string									name;
 		std::weak_ptr<Class>						super_class;
 		int32_t										version;
 		int32_t										instance_size;
@@ -66,11 +67,11 @@ namespace oo
 		std::unordered_map<std::string, Method>		methods;		// <key: method name>
 
 		Class()
-			: version(0), instance_size(0), dtor(NO_FORWARD)
+			: version(0), instance_size(0), dtor({NO_FORWARD})
 		{}
 
-		Class(int32_t version, std::weak_ptr<Class> super_class)
-			: super_class(super_class)
+		Class(int32_t version, std::weak_ptr<Class> super_class, std::string name)
+			: super_class(super_class), name(name)
 		{
 			this->version = version;
 
@@ -83,7 +84,7 @@ namespace oo
 		}
 
 		Class(int32_t version)
-			: Class(version, std::weak_ptr<Class>())	{}
+			: Class(version, std::weak_ptr<Class>(), std::string()) {}
 
 		void AddCtor(Ctor ctor)
 		{

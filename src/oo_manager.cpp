@@ -41,11 +41,10 @@ namespace oo
 
 	ObjectHash Manager::NewObject(std::weak_ptr<Class> isa)
 	{
-		if (isa.expired())
-			return OBJ_NULL;
+		assert(!isa.expired());
 
-		std::shared_ptr<Object> pobj = std::make_shared<Object>(isa);
-		std::shared_ptr<Class> pcurrent(isa);
+		std::shared_ptr<Object> pobj = std::make_shared<Object>(Object{ isa });
+		std::shared_ptr<Class> pcurrent = isa.lock();
 
 		while (pcurrent != nullptr)
 		{
@@ -59,15 +58,15 @@ namespace oo
 			pcurrent = pcurrent->super_class.lock();
 		}
 
-		auto obj_iter = m_objects.insert(std::move(pobj)).first;
-		return m_objects.hash_function()(*obj_iter);
+		auto obj_hash = std::hash<std::shared_ptr<Object>>{}(pobj);
+		auto obj_iter = m_objects.insert(std::make_pair(obj_hash, std::move(pobj)));
+
+		return obj_hash;
 	}
 
 	void Manager::DeleteObject(ObjectHash object_hash)
 	{
-		//std::size_t bucket = object_hash % m_objects.bucket_count();
-		auto is_hash = [&](auto &&pobj) { return object_hash == m_objects.hash_function()(pobj); };
-		std::erase_if(m_objects, is_hash);
+		m_objects.erase(object_hash);
 	}
 
 	std::weak_ptr<Class> Manager::ToClass(std::string_view class_name) const
@@ -81,18 +80,16 @@ namespace oo
 
 	std::weak_ptr<Object> Manager::ToObject(ObjectHash object_hash) const
 	{
-		std::size_t bucket = object_hash % m_objects.bucket_count();
-		auto pobj_iter = std::find_if(m_objects.begin(bucket), m_objects.end(bucket), [&](auto &&pobj) { return object_hash == m_objects.hash_function()(pobj); });
-		if (pobj_iter == m_objects.end(bucket))
+		auto obj_iter = m_objects.find(object_hash);
+		if (obj_iter == m_objects.end())
 			return std::weak_ptr<Object>();
 
-		return (*pobj_iter);
+		return obj_iter->second;
 	}
 
 	const Ctor* Manager::FindCtor(std::weak_ptr<Class> cl, uint8_t num_args) const
 	{
-		if (cl.expired())
-			return nullptr;
+		assert(!cl.expired());
 
 		std::shared_ptr<Class> pcurrent = cl.lock();
 
@@ -110,8 +107,7 @@ namespace oo
 
 	const Method* Manager::FindMethod(std::weak_ptr<Class> cl, std::string_view name) const
 	{
-		if (cl.expired())
-			return nullptr;
+		assert(!cl.expired());
 
 		std::shared_ptr<Class> pcurrent = cl.lock();
 
@@ -146,15 +142,9 @@ namespace oo
 
 	std::string_view Manager::GetObjectClassName(std::weak_ptr<Object> object) const
 	{
-		std::weak_ptr<Class> obj_class = object.lock()->isa;
+		assert(!object.expired());
 
-		for (auto&& _class : m_classes)
-		{
-			if (_class.second.get() == obj_class.lock().get())
-				return _class.first;
-		}
-
-		return {};
+		return object.lock()->isa.lock()->name;
 	}
 
 	void Manager::Clear()
