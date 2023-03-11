@@ -22,9 +22,6 @@
 #include <algorithm>
 #include <cctype>
 
-#include "assembly_create.h"
-#include "memory_.h"
-
 #include "oo_defs.h"
 
 namespace oo::utils
@@ -47,144 +44,203 @@ namespace oo::utils
 
 	int AddMethod(AMX* amx, const char* callback, const ArgList* args)
 	{
-		AssemblyCreate assembly;
-		assembly.add<Inst_Enter>();
+		unsigned int arg_count = (args != nullptr) ? args->size() : 0;
+		std::vector<ForwardParam> arguments(arg_count);
+		//arguments[0] = FP_CELL;
 
-		int num_args = (args == nullptr) ? 0 : args->size();
-		int start = num_args - 1;
-		int end = 0;
-
-		assembly.add<Inst_Push_VAL>()->set_long(FP_DONE);
-
-		for (int i = start; i >= end; i--)
+		if (arg_count)
 		{
-			cell type = 0;
-
-			switch (args->at(i))
+			for (size_t i = 0; i < args->size(); i++)
 			{
-			case OO_CELL:
-				type = FP_CELL;
-				break;
+				switch (args->at(i))
+				{
+				case OO_CELL:
+					arguments[i] = FP_CELL;
+					break;
 
-			case OO_BYREF:
-				type = FP_CELL_BYREF;
-				break;
+				case OO_BYREF:
+					arguments[i] = FP_CELL_BYREF;
+					break;
 
-			case OO_STRING:
-				type = FP_STRING;
-				break;
+				case OO_STRING:
+					arguments[i] = FP_STRING;
+					break;
 
-			case OO_STRING_EX:
-				type = FP_STRINGEX;
-				break;
+				case OO_STRING_EX:
+					arguments[i] = FP_STRINGEX;
+					break;
 
-			default:
-				if (args->at(i) > OO_CELL) // ARRAY
-					type = FP_ARRAY;
-
-				break;
+				default:
+					arguments[i] = FP_ARRAY;
+					break;
+				}
 			}
-
-			assembly.add<Inst_Push_VAL>()->set_long(type);
 		}
 
-		assembly.add<Inst_Push_VAL>()->set_long((long)callback);
-		assembly.add<Inst_Push_VAL>()->set_long((long)amx);
+		long espDislocation = sizeof(long) * arg_count;
+		long espDislocationAddHook = espDislocation + sizeof(long) + sizeof(char*) + sizeof(AMX*);
+		long forward;
+		ForwardParam* arg_ptr = arguments.data();
 
-		Inst_Call* inst_call = assembly.add<Inst_Call>();
+#ifdef WIN32
 
-		assembly.add<Inst_Add_ESP_Val>()->set_inc(4 * (num_args + 3)); // real + 3?
-		assembly.add<Inst_Leave>();
-		assembly.add<Inst_Ret>();
+		unsigned int start = arg_count;
+		long addressStart = (long)&arg_ptr[0];
+		espDislocation = espDislocationAddHook;
 
-		int size = assembly.size();
+		_asm
+		{
+			mov eax, addressStart
+			mov ebx, start
+			push FP_DONE
+			loopStartAdd :
+			cmp ebx, 0
+				je loopEndAdd
+				dec ebx
+				mov  ecx, [eax + ebx * 4]
+				push ecx
+				jmp loopStartAdd
+				loopEndAdd :
+			push callback
+				push amx
+				call MF_RegisterSPForwardByName
+				mov forward, eax
+				add esp, espDislocation
+		}
+#else
+		asm volatile(
+			"mov %1, %%eax;"
+			"mov %2, %%ebx;"
+			"pushl $-1;"
+			"loopStart:"
+			"cmp $0, %%ebx;"
+			"je loopEnd;"
+			"dec %%ebx;"
+			"mov (%%eax,%%ebx,4),%%ecx;"
+			"pushl %%ecx;"
+			"jmp loopStart;"
+			"loopEnd:"
+			"pushl %3;"
+			"pushl %4;"
+			"call *%5;"
+			"mov %%eax, %0;"
+			"add %6, %%esp;"
+			:"=r"(forward) : "m"(arg_ptr), "m"(arg_count), "r"(callback), "r"(amx), "m"(MF_RegisterSPForwardByName), "m"(espDislocationAddHook) : "eax", "ebx", "ecx");
+#endif
 
-		unsigned char* block = assembly.get_block();
-
-		inst_call->set_address((long)MF_RegisterSPForwardByName);
-
-		Memory m;
-		m.make_writable_executable((long)block, size);
-
-		return reinterpret_cast<long(*)()>(block)();
+		return forward;
 	}
 
-	cell ExecuteMethod(AMX* amx, cell* params, int8_t num_params, int32_t forward_id, ObjectHash this_hash, const ArgList* args, int8_t start_param)
+	cell ExecuteMethod(AMX* amx, cell* params, int32_t forward_id, ObjectHash this_hash, const ArgList* args, int8_t start_param)
 	{
 		Manager::Instance()->PushThis(this_hash);
 
-		int num_args = (args == nullptr) ? 0 : args->size();
+		unsigned int arg_count = (args != nullptr) ? args->size() : 0;
+		//MF_PrintSrvConsole("arg_count = %d\n", arg_count);
 
-		AssemblyCreate assembly;
-		assembly.add<Inst_Enter>();
+		std::vector<cell> arguments(arg_count);
+		//arguments[0] = this_hash;
 
 		std::vector<std::pair<std::string, int>> str_arr;
-		str_arr.reserve(num_args);
+		//MF_PrintSrvConsole("argument.size = %d\n", arguments.size());
 
-		int start = num_args - 1;
-		int end = 0;
+		long returnResult = 0;
+		long espDislocation = sizeof(long) * arg_count;
+		long espDislocationCallForward = espDislocation + sizeof(long);
+		cell* arg_ptr = arguments.data();
 
-		for (int i = start; i >= end; i--)
+		if (arg_count)
 		{
-			int p = i + start_param;
-			int8_t type = args->at(i);
+			str_arr.reserve(args->size());
 
-			switch (type)
+			for (size_t i = 0; i < args->size(); i++)
 			{
-			case OO_CELL:
-				assembly.add<Inst_Push_VAL>()->set_long(MF_GetAmxAddr(amx, params[p])[0]);
-				break;
+				int p = i + start_param;
+				long type = args->at(i);
 
-			case OO_BYREF:
-				assembly.add<Inst_Push_VAL>()->set_long((long)&MF_GetAmxAddr(amx, params[p])[0]);
-				break;
+				switch (type)
+				{
+				case OO_CELL:
+					arguments[i] = MF_GetAmxAddr(amx, params[p])[0];
+					break;
 
-			case OO_STRING:
-			case OO_STRING_EX:
-			{
-				int len = 0;
-				str_arr.push_back(std::make_pair(MF_GetAmxString(amx, params[p], 0, &len), type == OO_STRING ? 0 : p));
-				assembly.add<Inst_Push_VAL>()->set_long((long)(str_arr.back().first.data()));
-				break;
-			}
+				case OO_BYREF:
+					arguments[i] = (long)&MF_GetAmxAddr(amx, params[p])[0];
+					break;
 
-			default:
-				if (type > OO_CELL)
-					assembly.add<Inst_Push_VAL>()->set_long(MF_PrepareCellArrayA(MF_GetAmxAddr(amx, params[p]), type, true));
-
-				break;
+				case OO_STRING:
+				case OO_STRING_EX:
+				{
+					int len = 0;
+					str_arr.push_back(std::make_pair(MF_GetAmxString(amx, params[p], 0, &len), (type == OO_STRING) ? 0 : p));
+					arguments[i] = (long)str_arr.back().first.data();
+					break;
+				}
+				default:
+					if (type > OO_CELL)
+						arguments[i] = MF_PrepareCellArrayA(MF_GetAmxAddr(amx, params[p]), type, true);
+					break;
+				}
 			}
 		}
 
-		assembly.add<Inst_Push_VAL>()->set_long((long)forward_id);
+#if defined WIN32
 
-		Inst_Call* inst_call = assembly.add<Inst_Call>();
+		unsigned int start = arg_count;
+		long addressStart = (long)&arg_ptr[0];
+		espDislocation = espDislocationCallForward;
 
-		assembly.add<Inst_Add_ESP_Val>()->set_inc(4 * (num_args + 1));
-		assembly.add<Inst_Leave>();
-		assembly.add<Inst_Ret>();
+		_asm
+		{
+			mov eax, addressStart
+			mov ebx, start
+			loopStart :
+			cmp ebx, 0
+				je loopEnd
+				dec ebx
+				mov  ecx, [eax + ebx * 4]
+				push ecx
+				jmp loopStart
+				loopEnd :
+			push forward_id
+				call MF_ExecuteForward
+				mov returnResult, eax
+				add esp, espDislocation
+		}
 
-		int size = assembly.size();
+#else
 
-		unsigned char* block = assembly.get_block();
-
-		inst_call->set_address((long)MF_ExecuteForward);
-
-		Memory m;
-		m.make_writable_executable((long)block, size);
-
-		cell ret = reinterpret_cast<long(*)()>(block)();
+		asm volatile (
+			"mov %1, %%eax;"
+			"mov %2, %%ebx;"
+			"0:"
+			"cmp $0, %%ebx;"
+			"je 1f;"
+			"dec %%ebx;"
+			"mov (%%eax,%%ebx,4),%%ecx;"
+			"pushl %%ecx;"
+			"jmp 0b;"
+			"1:"
+			"pushl %3;"
+			"call *%4;"
+			"mov %%eax, %0;"
+			"add %5, %%esp;"
+			:"=r"(returnResult) : "m"(arg_ptr), "m"(arg_count), "r"(forward_id), "m"(MF_ExecuteForward), "r"(espDislocationCallForward) : "eax", "ebx", "ecx");
+#endif
 
 		// copyback string
 		for (auto& e : str_arr)
 		{
 			int p = e.second;
 			if (p > 0)
+			{
+				//MF_Log("diao=[%s]", e.first.data());
 				MF_SetAmxString(amx, params[p], e.first.data(), strlen(e.first.data()));
+			}
 		}
 
 		Manager::Instance()->PopThis();
 
-		return ret;
+		return returnResult;
 	}
 }

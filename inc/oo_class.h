@@ -34,7 +34,7 @@ namespace oo
 {
 	using AmxxForward = int;
 	constexpr AmxxForward NO_FORWARD = -1;
-	using ArgList	  = std::vector<int8_t>;
+	using ArgList	  = std::vector<long>;
 
 	struct Ctor
 	{
@@ -51,6 +51,7 @@ namespace oo
 	{
 		AmxxForward	forward_index;
 		ArgList		args;
+		bool		is_static;
 	};
 
 	struct Class : std::enable_shared_from_this<Class>
@@ -70,13 +71,13 @@ namespace oo
 			: version(0), instance_size(0), dtor({NO_FORWARD})
 		{}
 
-		Class(int32_t version, std::weak_ptr<Class> super_class, std::string name)
-			: super_class(super_class), name(name)
+		Class(int32_t version, std::weak_ptr<Class> super, std::string name)
+			: super_class(super), name(name)
 		{
 			this->version = version;
 
-			if (std::shared_ptr psuper = super_class.lock(); psuper != nullptr)
-				this->instance_size = psuper->instance_size;
+			if (!super.expired())
+				this->instance_size = super.lock()->instance_size;
 			else
 				this->instance_size = 0;
 

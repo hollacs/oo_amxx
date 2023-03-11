@@ -30,7 +30,9 @@ namespace oo::utils
 	bool IsLegit(std::string_view identifier);
 	bool IsLegitSize(int8_t size);
 	int AddMethod(AMX* amx, const char* callback, const ArgList* args = nullptr);
-	cell ExecuteMethod(AMX* amx, cell* params, int8_t num_params, int32_t forward_id, ObjectHash this_hash, const ArgList* args = nullptr, int8_t start_param = 0);
+	cell ExecuteMethod(AMX* amx, cell* params, int32_t forward_id, ObjectHash this_hash, const ArgList* args = nullptr, int8_t start_param = 0);
+	void CopyBackString(AMX *amx, cell* params, const std::vector<std::pair<std::string, int>> &vec);
+	void PopThis();
 }
 
 

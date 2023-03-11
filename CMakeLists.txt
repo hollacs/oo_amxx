@@ -1,36 +1,78 @@
-﻿# CMakeList.txt : CMake project for amxmodx-oo, include source and define
-# project specific logic here.
-#
-cmake_minimum_required (VERSION 3.8)
+﻿cmake_minimum_required (VERSION 3.8)
 
 project ("oo_amxx")
 
-# Add source to this project's executable.
-add_library (oo_amxx SHARED "public/sdk/amxxmodule.cpp" "public/sdk/amxxmodule.h" "inc/memory_.h" "inc/assembly_create.h" "src/assembly_create.cpp" "src/oo_amxx.cpp" "src/oo_natives.cpp" "inc/oo_natives.h" "inc/oo_manager.h" "inc/oo_class.h" "inc/oo_object.h" "inc/oo_defs.h" "src/oo_manager.cpp" "inc/oo_utils.h" "src/oo_utils.cpp")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-# TODO: Add tests and install targets if needed.
-set_target_properties (oo_amxx
-	PROPERTIES
-		CXX_STANDARD 17
+add_library (oo_amxx SHARED 
+	"public/sdk/amxxmodule.cpp" 
+	"public/sdk/amxxmodule.h" 
+	"inc/moduleconfig.h"
+	"src/oo_amxx.cpp" 
+	"src/oo_natives.cpp" 
+	"inc/oo_natives.h" 
+	"inc/oo_manager.h" 
+	"inc/oo_class.h" 
+	"inc/oo_object.h" 
+	"inc/oo_defs.h" 
+	"src/oo_manager.cpp" 
+	"inc/oo_utils.h" 
+	"src/oo_utils.cpp"
 )
 
-target_include_directories (oo_amxx
-	PRIVATE
-		${PROJECT_SOURCE_DIR}/public
-		${PROJECT_SOURCE_DIR}/public/amtl
-		${PROJECT_SOURCE_DIR}/public/sdk
-		${PROJECT_SOURCE_DIR}/public/memtools
-		${PROJECT_SOURCE_DIR}/inc
-		${PROJECT_SOURCE_DIR}/src
+set_target_properties(oo_amxx PROPERTIES OUTPUT_NAME "oo")
+
+target_include_directories(oo_amxx PRIVATE
+	${PROJECT_SOURCE_DIR}/public
+	${PROJECT_SOURCE_DIR}/public/sdk
+	${PROJECT_SOURCE_DIR}/inc
+	${PROJECT_SOURCE_DIR}/src
 )
 
-target_compile_definitions (oo_amxx
-	PRIVATE
-		HAVE_STDINT_H
-		NO_MSVC8_AUTO_COMPAT
-		_CRT_SECURE_NO_WARNINGS
+target_compile_definitions(oo_amxx PRIVATE
+	HAVE_STDINT_H
+	PAWN_CELL_SIZE=32
+	_CRT_SECURE_NO_WARNINGS
 )
 
-add_custom_command(TARGET oo_amxx POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:oo_amxx> C:/Server/cs16/cstrike/addons/amxmodx/modules/${targetfile}
-)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	#  -pipe -fno-strict-aliasing -fvisibility=hidden -Wall -Werror -Wno-parentheses -Wno-uninitialized -Wno-unused -Wno-switch
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m32")
+	target_link_options(oo_amxx PRIVATE "-m32")
+
+	if (CMAKE_BUILD_TYPE MATCHES "Debug")
+		target_compile_definitions(oo_amxx PRIVATE DEBUG _DEBUG)
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ggdb -O0")
+	else ()
+		target_compile_definitions(oo_amxx PRIVATE NDEBUG)
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
+	endif ()
+
+	if (UNIX)
+		target_compile_definitions(oo_amxx PRIVATE _LINUX POSIX LINUX)
+		target_link_libraries(oo_amxx)
+	endif ()
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+	if (CMAKE_BUILD_TYPE MATCHES ".*Debug")
+		target_compile_definitions(oo_amxx PRIVATE DEBUG _DEBUG)
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MTd /Od /RTC1")
+	else ()
+		target_compile_definitions(oo_amxx PRIVATE NDEBUG)
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MT /Ox")
+		set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /OPT:ICF /OPT:REF")
+	endif ()
+
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Oy-")
+	target_compile_definitions(oo_amxx PRIVATE WIN32 _WINDOWS)
+endif ()
+
+if (UNIX)
+	set_target_properties(oo_amxx PROPERTIES PREFIX "")
+	set_target_properties(oo_amxx PROPERTIES SUFFIX "_amxx_i386.so")
+elseif (WIN32)
+	set_target_properties(oo_amxx PROPERTIES PREFIX "")
+	set_target_properties(oo_amxx PROPERTIES SUFFIX "_amxx.dll")
+endif ()

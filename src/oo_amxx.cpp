@@ -33,6 +33,7 @@ void OnAmxxAttach(void)
 		{ "oo_ctor",	oo::natives::native_decl_ctor },
 		{ "oo_dtor",	oo::natives::native_decl_dtor },
 		{ "oo_mthd",	oo::natives::native_decl_msg },
+		{ "oo_smthd",	oo::natives::native_decl_static_msg },
 		{ "oo_var",		oo::natives::native_decl_ivar },
 
 		{ "oo_isa",			oo::natives::native_isa },

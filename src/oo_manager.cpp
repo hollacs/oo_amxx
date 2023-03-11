@@ -59,7 +59,7 @@ namespace oo
 		}
 
 		auto obj_hash = std::hash<std::shared_ptr<Object>>{}(pobj);
-		auto obj_iter = m_objects.insert(std::make_pair(obj_hash, std::move(pobj)));
+		m_objects.insert(std::make_pair(obj_hash, std::move(pobj)));
 
 		return obj_hash;
 	}
