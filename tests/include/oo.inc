@@ -22,140 +22,74 @@
 
 #define _oo_included
 
-
 #define OO_VERSION		1.0.0
 #define OO_VERSION_NUM	100
 stock const OO_VERSION_STR[] = "1.0.0";
 
-enum Obj
-{
-	@null = 0
-};
+//#define method 	public
+#define @null 	any:0
+#define @this 	oo_this()
+#define @increment(%0[%1]) 	oo_set(%0, oo_get(%0, %1) + 1)
+#define @decrement(%0[%1]) 	oo_set(%0, oo_get(%0, %1) - 1)
 
-// class<"class identifier">@
-#define class<%0>@					oo_decl_class(%0)
+#define OO_CELL			(1)		// cell
+#define OO_FLOAT		(1)		// float
+#define OO_BYREF		(0) 	// cell or float by reference
+#define OO_STRING		(-1) 	// const string[]
+#define OO_STRING_EX 	(-2) 	// string[]
+#define OO_VEC2			(2)		// 2d vector (not necessary)
+#define OO_VEC3			(3)		// 3d vector (not necessary)
+#define OO_ARRAY[%0]	(%0)	// array[size]
 
-// sub_class<"sub" extends "super">@
-#define sub_class<%0extends%1>@		oo_decl_class(%0, %1)
+#define @cell 			OO_CELL
+#define @float 			OO_FLOAT
+#define @byref 			OO_BYREF
+#define @string 		OO_STRING
+#define @stringex		OO_STRING_EX
+#define @vec2			OO_VEC2
+#define @vec3			OO_VEC3
+#define @array[%0]		OO_ARRAY[%0]
 
-// ivar<"class">@Public/Protected/Private["name"]:OO_TYPE@
-#define ivar<%0>@%1[%2]:%3@			oo_decl_ivar(%0, %2, %3)
+#define @int{%0} 		@cell
+#define @bool{%0}		@cell
+#define @fl{%0}			@float
+#define @ref{%0}		@byref
+#define @str{%0}		@string
+#define @stref{%0}		@stringex
+#define @vec{%0[%1]}	@array[%1]
+#define @arr{%0[%1]}	@array[%1]
 
-// ctor<"class">@Public/Protected/Private."name"()@
-#define ctor<%0>@%1.%2(%3)@			oo_decl_ctor(%0, %2, %3)
+//#define oo_get_cell(%0,%1)			oo_get(%0, %1)
+#define oo_get_str(%0,%1,%2,%3) 	oo_get(%0, %1, 0, %3, %2, 0, %3)
+#define oo_get_arr(%0,%1,%2)		oo_get(%0, %1, 0, 0, %2, 0, 0)
 
-// void_ctor<"class">@Public/Protected/Private."name"()@
-#define void_ctor<%0>@%1.%2()@		oo_decl_ctor(%0, %2)
-
-// dtor<"class">@Public/Protected/Private."name"()@
-#define dtor<%0>@%1.%2()@			oo_decl_dtor(%0, %2)
-
-// void_dtor<"class">@Public/Protected/Private."name"()@
-#define void_dtor<%0>@%1.%2()@		oo_decl_dtor(%0, %2)
-
-// msg<"class">@Public/Protected/Private."name"(OO_TYPE, any: ...)@
-#define msg<%0>@%1.%2(%3)@			oo_decl_msg(%0, %2, %3)
-
-// void_msg<"class">@Public/Protected/Private."name"()@
-#define void_msg<%0>@%1.%2()@		oo_decl_msg(%0, %2)
-
-// isa<"class">(object) -> true/false
-#define isa<%0>(%1)				oo_isa(%1, %0)
-
-// subclass_of<"super">("sub")
-#define subclass_of<%0>(%1)		oo_subclass_of(%1, %0)
-
-// new<"class">(...ctor args) -> Obj: or @null
-#define new<%0>(%1)				oo_new(%0, %1)
-//#define new<%0>(%1)				{ __oo_set_next_class(%0); __oo_new(%1); }
-//#define new(<%0> %1)				oo_new(%0 %1)
-
-// alloc<"class">() -> Obj: or @null
-// (Use this instead of new<>() when no argument involved)
-#define alloc<%0>()				oo_new(%0)
-
-// delete@(object)
-#define delete@(%0)				oo_delete(%0)
-
-// send@object->method(...args)
-//#define send@%0->%1(%2)			oo_send(%0, "%1", %2)
-#define send#%0.%1(%2)			oo_send(%0, %1, %2)
-
-#define void_send#%0.%1()		oo_send(%0, %1)
-
-// read@object["ivar"] -> _:									(for cells only)
-#define read#%0[%1]								oo_read(%0, %1)
-
-// read_a@object["ivar"][begin..end] >> array[begin..end]		(for arrays only)
-#define read_a#%0[%1][%2..%3]>>{%4[%5..%6]}		oo_read(%0, %1, %2, %3, %4, %5, %6)
-
-// read_sz@object["ivar"] >> string[]		(for zero-terminated strings only)
-//#define read_sz@%0[%1]>>%2[%3]				oo_read(%0, %1, %2, %3)
-
-// write@object["ivar"] << {value}
-#define write#%0[%1]<<{%2}						oo_write(%0, %1, %2)
-
-// write_a@object["ivar"][begin..end] << { value[begin..end] }
-#define write_a#%0[%1][%2..%3]<<{%4[%5..%6]}	oo_write(%0, %1, %2, %3, %4, %5, %6)
-
-// write_sz@object["ivar"] >> { string[] }		(for zero-terminated strings only)
-//#define write_sz@%0[%1]<<{%2[]}					oo_write(%0, %1, %2)
-
-// increment@object["ivar"]
-#define increment#%0[%1]++		oo_write(%0, read@%0[%1] + 1)
-
-// decrement@object["ivar"]
-#define decrement#%0[%1]--		oo_write(%0, read@%0[%1] - 1)
-
-// this -> Obj:
-// (Use only in class methods.)
-//#define this					oo_this()
-//#define super					oo_super()
-
-#define this_ctor(%0)			oo_this_ctor(%0)
-#define super_ctor(%0)			oo_super_ctor(%0)
-
-
-#define OO_CELL			(1)
-#define OO_FLOAT		(1)
-#define OO_BYREF		(-1)
-//#define OO_STRING		(0)
-#define OO_VEC2			(2)
-#define OO_VEC3			(3)
-#define OO_ARRAY[%0]	(%0)
-
+//#define oo_set_cell(%0,%1,%2) 	oo_set(%0, %1, %2)
+#define oo_set_arr(%0,%1,%2)	oo_set(%0, %1, 0, 0, %2, 0, 0)
+#define oo_set_str(%0,%1,%2) 	oo_set(%0, %1, 0, 0, %2, 0, 0)
 
 forward oo_init();
 
+native oo_class(const class[], const base[] = "", version_no = OO_VERSION_NUM);
+native oo_ctor(const class[], const name[], any:...);
+native oo_dtor(const class[], const name[]);
+native oo_mthd(const class[], const name[], any:...);
+native oo_smthd(const class[], const name[], any:...);
+native oo_var(const class[], const name[], size);
 
-native oo_decl_class(const class[], const base[] = "", version_no = OO_VERSION_NUM);
-native oo_decl_ctor(const class[], const name[], any: ...);
-native oo_decl_dtor(const class[], const name[]);
-native oo_decl_msg(const class[], const name[], any: ...);
-native oo_decl_ivar(const class[], const name[], size);
+native bool:oo_isa(any:this, const _class[], bool:superclass=false);
+native bool:oo_subclass_of(const sub[], const _super[]);
+native bool:oo_class_exists(const class[]);
+native bool:oo_object_exists(any:this);
+native oo_get_classname(any:this, output[], len);
 
-native oo_isa(Obj:_this, const _super[]);
-native oo_subclass_of(const sub[], const _super[]);
+native any:oo_new(const class[], any: ...);
+native oo_delete(any:this);
 
-native Obj:oo_new(const class[], any: ...);
-native oo_delete(Obj:_this);
+native oo_call(any:this, const name[], any: ...);
+native oo_get(any:this, const name[], any: ...);
+native oo_set(any:this, const name[], any: ...);
 
-native oo_send(Obj:_this, const name[], any: ...);
-native oo_read(Obj:_this, const name[], any: ...);
-native oo_write(Obj:_this, const name[], any: ...);
+native any:oo_this();
 
-native Obj:oo_this();
-
-native oo_this_ctor(any: ...);
+//native oo_this_ctor(any: ...);
 native oo_super_ctor(const _super[], any: ...);
-
-
-// HACK for 0-arg new
-/*static __s_next_class[24];
-
-stock __oo_set_next_class(const next_class[])
-{
-	copy(__s_next_class, charsmax(__s_next_class), next_class);
-}
-
-#define __oo_new(%0)	{ oo_new(__s_next_class, %0); }*/

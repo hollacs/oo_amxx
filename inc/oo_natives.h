@@ -124,6 +124,8 @@ namespace oo::natives
 
 	cell AMX_NATIVE_CALL native_class_exists(AMX* amx, cell *params);
 	cell AMX_NATIVE_CALL native_object_exists(AMX* amx, cell *params);
+	cell AMX_NATIVE_CALL native_method_exists(AMX* amx, cell* params);
+	cell AMX_NATIVE_CALL native_var_exists(AMX* amx, cell* params);
 	cell AMX_NATIVE_CALL native_get_class_name(AMX* amx, cell *params);
 }
 

@@ -3,28 +3,24 @@
 
 public oo_init()
 {
-	// declare class
 	oo_class("Person")
 	{
 		new cl[] = "Person";
 
-		// declare variables
-		oo_var(cl, "id", 16);
-		oo_var(cl, "name", 32); // new name[32];
-		oo_var(cl, "sex", 1); // new sex;
+		oo_var(cl, "id", 16); // one cell variable
+		oo_var(cl, "name", 32); // string variable (length 32)
+		oo_var(cl, "sex", 1);
 		oo_var(cl, "phone_no", 32);
 		oo_var(cl, "email", 64);
-		oo_var(cl, "test_array", 3); // new array[3];
+		oo_var(cl, "test_array", 3);
 
-		// declare constructor
+		// constructor
 		oo_ctor(cl, "Ctor", @str{id}, @str{name}, @int{sex}, @str{phone_no}, @str{email});
 
-		// declare destructor
+		// destructor
 		oo_dtor(cl, "Dtor");
 
-		// declare methods
 		oo_mthd(cl, "SetArray", @arr{test[3]});
-		oo_mthd(cl, "GetName", @stref{name}, @int{len});
 	}
 }
 
@@ -46,10 +42,5 @@ public Person@Dtor()
 
 public Person@SetArray(test[3])
 {
-	oo_set_arr(oo_this(), "test_array", test);
-}
-
-public Person@GetName(name[], len)
-{
-	oo_get_str(oo_this(), "name", name, len);
+	oo_set_arr(this, "test_array", test);
 }

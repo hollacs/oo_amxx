@@ -52,6 +52,8 @@ void OnAmxxAttach(void)
 
 		{ "oo_class_exists",	oo::natives::native_class_exists },
 		{ "oo_object_exists",	oo::natives::native_object_exists },
+		{ "oo_method_exists",   oo::natives::native_method_exists },
+		{ "oo_var_exists",		oo::natives::native_var_exists },
 		{ "oo_get_classname",	oo::natives::native_get_class_name },
 
 		{ nullptr, nullptr }

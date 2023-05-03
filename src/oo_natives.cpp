@@ -867,4 +867,75 @@ namespace oo::natives
 
 		return 1;
 	}
+
+	cell AMX_NATIVE_CALL native_method_exists(AMX* amx, cell* params)
+	{
+		ObjectHash _this = params[1];
+		std::string_view _name = MF_GetAmxString(amx, params[2], 0, nullptr);
+		std::shared_ptr<Class> pisa = nullptr;
+
+		// calling any super class' method
+		auto&& class_limiter_pos = _name.find('@');
+		std::shared_ptr<Object> pobj = Manager::Instance()->ToObject(_this).lock();
+		if (pobj == nullptr)
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "Object (%d) not found", _this);
+			return 0;
+		}
+
+		pisa = pobj->isa.lock();
+		assert(pisa != nullptr);
+
+		if (class_limiter_pos != std::string_view::npos)
+		{
+			std::string_view super_name = _name.substr(0, class_limiter_pos);
+			std::shared_ptr<Class> psuper = Manager::Instance()->ToClass(super_name).lock();
+			if (psuper == nullptr)
+			{
+				MF_LogError(amx, AMX_ERR_NATIVE, "Call of %s (super): No such class (%s)", _name.data(), super_name.data());
+				return 0;
+			}
+			if (!pisa->IsSubclassOf(psuper))
+			{
+				auto&& classes = Manager::Instance()->GetClasses();
+				auto&& isa_name = std::find_if(classes.begin(), classes.end(), [&](auto&& pair) { return pair.second.get() == pisa.get(); })->first;
+				MF_LogError(amx, AMX_ERR_NATIVE, "Call of %s (super): %s is not a super class of %s", _name.data(), super_name.data(), isa_name.data());
+				return 0;
+			}
+
+			_name = _name.substr(class_limiter_pos + 1);
+			pisa = psuper;
+		}
+
+		auto&& classes = Manager::Instance()->GetClasses();
+
+		auto result = Manager::Instance()->FindMethod(pisa, _name);
+		if (result == nullptr)
+			return false;
+
+		return true;
+	}
+
+	cell AMX_NATIVE_CALL native_var_exists(AMX* amx, cell* params)
+	{
+		ObjectHash _this = params[1];
+		std::string_view _name = MF_GetAmxString(amx, params[2], 0, nullptr);
+
+		std::shared_ptr<Object> pobj = Manager::Instance()->ToObject(_this).lock();
+		if (pobj == nullptr)
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "Checking IVar %s: Object (%d) not found", _name.data(), _this);
+			return 0;
+		}
+
+		std::shared_ptr<Class> pisa = pobj->isa.lock();
+		assert(pisa != nullptr);
+
+		auto&& ivar_iter = pobj->ivars.find(std::string{ _name });
+
+		if (ivar_iter == pobj->ivars.end())
+			return false;
+
+		return true;
+	}
 }
