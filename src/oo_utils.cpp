@@ -63,11 +63,11 @@ namespace oo::utils
 					break;
 
 				case OO_STRING:
-					arguments[i] = FP_STRING;
+					arguments[i] = FP_ARRAY;
 					break;
 
 				case OO_STRING_EX:
-					arguments[i] = FP_STRINGEX;
+					arguments[i] = FP_ARRAY;
 					break;
 
 				default:
@@ -141,7 +141,7 @@ namespace oo::utils
 		std::vector<cell> arguments(arg_count);
 		//arguments[0] = this_hash;
 
-		std::vector<std::pair<std::string, int>> str_arr;
+		std::vector<std::pair<int, std::string>> str_arr;
 		//MF_PrintSrvConsole("argument.size = %d\n", arguments.size());
 
 		long returnResult = 0;
@@ -172,8 +172,17 @@ namespace oo::utils
 				case OO_STRING_EX:
 				{
 					int len = 0;
-					str_arr.push_back(std::make_pair(MF_GetAmxString(amx, params[p], 0, &len), (type == OO_STRING) ? 0 : p));
-					arguments[i] = (long)str_arr.back().first.data();
+					int pp = (type == OO_STRING) ? 0 : p;
+					str_arr.push_back(std::make_pair(pp, MF_GetAmxString(amx, params[p], 0, &len)));
+					auto& back = str_arr.back();
+
+					if (pp > 0)
+					{
+						back.second.resize(256, '\0');
+						len = 256;
+					}
+					
+					arguments[i] = MF_PrepareCharArrayA(back.second.data(), len+1, pp > 0);
 					break;
 				}
 				default:
@@ -231,11 +240,12 @@ namespace oo::utils
 		// copyback string
 		for (auto& e : str_arr)
 		{
-			int p = e.second;
+			int p = e.first;
 			if (p > 0)
 			{
-				//MF_Log("diao=[%s]", e.first.data());
-				MF_SetAmxString(amx, params[p], e.first.data(), strlen(e.first.data()));
+				//MF_Log("diao=[%s][%d][%d]", e.second.data(), strlen(e.second.data()), p);
+				//MF_Log("pp is >>%d<<", p);
+				MF_SetAmxString(amx, params[p], e.second.data(), strlen(e.second.data()));
 			}
 		}
 
