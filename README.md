@@ -3,4 +3,4 @@ Object-Oriented Simulation for AMXXPawn<br>
 Idea drafted with BB.O.<br>
 Author: BB.O. & holla
 
-Credits: Orpheu module
+Credits: Orpheu module for inline assembly code
