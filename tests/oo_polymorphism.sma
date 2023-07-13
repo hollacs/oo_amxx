@@ -30,24 +30,6 @@ public oo_init()
 	}
 }
 
-public main()
-{
-	register_plugin("[OO] Polymorphism", "0.1", "holla");
-
-	new Shape:shape = oo_new("Shape");
-	oo_call(shape, "Area");
-
-	new Rectangle:rec = oo_new("Rectangle", 10, 7);
-	oo_call(rec, "Area");
-
-	new Triangle:tri = oo_new("Triangle", 10, 5);
-	oo_call(tri, "Area");
-
-	oo_delete(shape);
-	oo_delete(rec);
-	oo_delete(tri);
-}
-
 public Shape@Ctor() {}
 
 public Shape@Ctor2(w, h)
@@ -79,4 +61,22 @@ public Triangle@Area()
 	server_print("Triangle class area: %d", area);
 
 	return area;
+}
+
+public main()
+{
+	register_plugin("[OO] Polymorphism", "0.1", "holla");
+
+	new Shape:shape = oo_new("Shape");
+	oo_call(shape, "Area");
+
+	new Rectangle:rec = oo_new("Rectangle", 10, 7);
+	oo_call(rec, "Area");
+
+	new Triangle:tri = oo_new("Triangle", 10, 5);
+	oo_call(tri, "Area");
+
+	oo_delete(shape);
+	oo_delete(rec);
+	oo_delete(tri);
 }

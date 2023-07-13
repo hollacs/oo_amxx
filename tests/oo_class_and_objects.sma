@@ -21,23 +21,6 @@ public oo_init()
 	}
 }
 
-public main()
-{
-	register_plugin("[OO] Class and Objects", "0.1", "holla");
-
-	new Person:p1 = oo_new("Person");
-	oo_set_str(p1, "name", "John");
-	oo_set(p1, "age", 20);
-	oo_set(p1, "height", 180.0);
-	oo_call(p1, "Display");
-
-	new Person:p2 = oo_new("Person", "Mary", 18, 165.0);
-	oo_call(p2, "Display");
-
-	oo_delete(p1);
-	oo_delete(p2);
-}
-
 public Person@Ctor()
 {
 	server_print("object constructed");
@@ -73,4 +56,21 @@ public Person@Display()
 		Float:oo_get(this, "height"));
 
 	server_print("----------");
+}
+
+public main()
+{
+	register_plugin("[OO] Class and Objects", "0.1", "holla");
+
+	new Person:p1 = oo_new("Person");
+	oo_set_str(p1, "name", "John");
+	oo_set(p1, "age", 20);
+	oo_set(p1, "height", 180.0);
+	oo_call(p1, "Display");
+
+	new Person:p2 = oo_new("Person", "Mary", 18, 165.0);
+	oo_call(p2, "Display");
+
+	oo_delete(p1);
+	oo_delete(p2);
 }
