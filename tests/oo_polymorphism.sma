@@ -40,7 +40,7 @@ public main()
 	new Rectangle:rec = oo_new("Rectangle", 10, 7);
 	oo_call(rec, "Area");
 
-	new Rectangle:tri = oo_new("Triangle", 10, 5);
+	new Triangle:tri = oo_new("Triangle", 10, 5);
 	oo_call(tri, "Area");
 
 	oo_delete(shape);
