@@ -3,53 +3,83 @@
 
 public oo_init()
 {
-	// declare class
-	oo_class("Person")
+	// Declare a class
+	oo_class("PlayerClassInfo")
 	{
-		new cl[] = "Person";
+		new cl[] = "PlayerClassInfo";
+		
+		// Declare variables
+		oo_var(cl, "name", 32); // string
+		oo_var(cl, "model", 32); // string
+		oo_var(cl, "health", 1); // integer
+		oo_var(cl, "gravity", 1); // float
 
-		// declare variables
-		oo_var(cl, "id", 16);
-		oo_var(cl, "name", 32); // new name[32];
-		oo_var(cl, "sex", 1); // new sex;
-		oo_var(cl, "phone_no", 32);
-		oo_var(cl, "email", 64);
-		oo_var(cl, "test_array", 3); // new array[3];
+		// Declare constructor
+		oo_ctor(cl, "Ctor", @str{name}, @str{model}, @int{health}, @fl{gravity});
 
-		// declare constructor
-		oo_ctor(cl, "Ctor", @str{id}, @str{name}, @int{sex}, @str{phone_no}, @str{email});
+		// Declare destructor
+		oo_dtor(cl, "Dtor");
+	}
 
-		// declare destructor
+	oo_class("PlayerClass")
+	{
+		new cl[] = "PlayerClass";
+		oo_var(cl, "player", 1);
+
+		oo_ctor(cl, "Ctor", @int{player});
 		oo_dtor(cl, "Dtor");
 
-		// declare methods
-		oo_mthd(cl, "SetArray", @arr{test[3]});
-		oo_mthd(cl, "GetName", @stref{name}, @int{len});
+		oo_mthd(cl, "GetInfo"); // Get PlayerClassInfo object
+		oo_mthd(cl, "AssignProps"); // Assign properties
+
 	}
 }
 
-public Person@Ctor(const id[], const name[], sex, const phone_no[], const email[])
+// Constructor content
+public PlayerClassInfo@Ctor(const name[], const model[], health, Float:gravity, Float:speed)
+{
+	new this = oo_this(); // Get this object
+
+	// Assign values to variables
+	oo_set_str(this, "name", name); // set for string
+	oo_set_str(this, "model", model);
+	oo_set(this, "health", health); // set for integer
+	oo_set(this, "gravity", gravity); // set for float
+}
+
+public PlayerClassInfo@Dtor() {}
+
+public PlayerClass@Ctor(player)
+{
+	new this = oo_this();
+	oo_set(this, "player", player);
+}
+
+public PlayerClass@Dtor() {}
+
+// Get PlayerClassInfo object
+public PlayerClass@GetInfo() {}
+
+// Assign properties
+public PlayerClass@AssignProps()
 {
 	new this = oo_this();
 
-	oo_set_str(this, "id", id);
-	oo_set_str(this, "name", name);
-	oo_set(this, "sex", sex);
-	oo_set_str(this, "phone_no", phone_no);
-	oo_set_str(this, "email", email);
-}
+	new player = oo_get(this, "player"); // get value 'player' from 'this' object
+	if (!is_user_alive(player))
+		return;
 
-public Person@Dtor()
-{
+	new info = oo_call(this, "GetInfo"); // call method 'GetInfo' from 'this' object
+	if (info == @null)
+		return;
 
-}
+	new health = oo_get(info, "health"); // get value 'health' from 'info' object
+	set_user_health(player, health);
 
-public Person@SetArray(test[3])
-{
-	oo_set_arr(oo_this(), "test_array", test);
-}
+	new Float:gravity = Float:oo_get(info, "gravity");
+	set_user_gravity(player, gravity);
 
-public Person@GetName(name[], len)
-{
-	oo_get_str(oo_this(), "name", name, len);
+	new model[32];
+	oo_get_str(info, "model", model, charsmax(model)); // get string value 'model' from 'info' object
+	cs_set_user_model(player, model);
 }

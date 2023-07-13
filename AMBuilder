@@ -21,5 +21,8 @@ binary.sources = [
   'src/oo_manager.cpp',
   'src/oo_utils.cpp',
 ]
+
+binary.compiler.debuginfo = None
+binary.compiler.symbol_files = None
   
 builder.Add(binary)

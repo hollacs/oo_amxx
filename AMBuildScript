@@ -19,6 +19,12 @@ class AMXXConfig(object):
           encoding = locale.getpreferredencoding()
       return output.decode(encoding, 'replace').split('\n')
     return None
+
+  @property
+  def tag(self):
+    if builder.options.debug == '1':
+      return 'Debug'
+    return 'Release'
   
   def configure(self):
     cxx = builder.DetectCompilers()
@@ -31,10 +37,12 @@ class AMXXConfig(object):
     # Optimization
     if builder.options.opt == '1':
       cxx.defines += ['NDEBUG']
+      print('opt is enabled')
 
     # Debugging
     if builder.options.debug == '1':
       cxx.defines += ['DEBUG', '_DEBUG']
+      print('debug is enabled')
 
     # Platform-specifics
     if builder.target_platform == 'linux':
@@ -188,6 +196,7 @@ class AMXXConfig(object):
     cxx.linkflags  += ['-ldl', '-lm']
     if cxx.vendor == 'gcc':
       cxx.linkflags  += ['-static-libgcc']
+      print('-static-libgcc')
     elif cxx.vendor == 'clang':
       cxx.linkflags  += ['-lgcc_eh']
     if cxx.like('gcc'):
@@ -233,11 +242,7 @@ class AMXXConfig(object):
     binary = context.compiler.Library(name)
     self.ConfigureForModule(context, binary.compiler)
     return binary
-  
-  def Program(self, context, name):
-    binary = context.compiler.Program(name)
-    return binary
-  
+
   def AddAssembly(self, context, binary, input_file, output_file, includes=[], extra_argv=[]):
     if builder.target_platform == 'windows':
       obj_type = 'win32'
@@ -250,7 +255,6 @@ class AMXXConfig(object):
     output_path = output_file
 
     argv = [
-      self.nasm_path,
       '-I{0}{1}'.format(context.currentSourcePath, os.sep),
       input_path,
       '-f', obj_type,

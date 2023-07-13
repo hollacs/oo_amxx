@@ -72,7 +72,7 @@ namespace oo
 		{}
 
 		Class(int32_t version, std::weak_ptr<Class> super, std::string name)
-			: super_class(super), name(name)
+			: name(name), super_class(super)
 		{
 			this->version = version;
 
