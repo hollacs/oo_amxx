@@ -28,9 +28,7 @@ namespace native
 			return 0;
 		}
 
-		Class new_class(_version, ke::AString(_class), super);
-		Manager::Instance()->NewClass(_class, ke::Move(new_class));
-
+		Manager::Instance()->NewClass(_class, _version, ke::AString(_class), super);
 		return 1;
 	}
 
