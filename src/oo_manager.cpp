@@ -19,7 +19,8 @@ namespace oo
     Class* Manager::NewClass(const char *class_name, int32_t version, ke::AString name, Class *super)
     {
         auto in = m_classes.findForAdd(class_name);
-        m_classes.add(in, ke::AString(class_name), ke::AutoPtr<Class>(new Class(version, name, super)));
+        Class *pcl = new Class(version, name, super);
+        m_classes.add(in, ke::AString(class_name), ke::Move(pcl));
         return in->value;
     }
 
