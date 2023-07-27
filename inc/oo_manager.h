@@ -22,7 +22,7 @@ namespace oo
         Manager();
         ~Manager();
 
-        Class*      NewClass(const char* class_name, int32_t version, ke::AString name, Class *super);
+        Class*      NewClass(const char* class_name, int32_t version, const char *name, Class *super);
         ObjectHash  NewObject(Class* isa);
         void        DeleteObject(ObjectHash object_hash);
 

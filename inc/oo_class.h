@@ -49,7 +49,7 @@ namespace oo
 			Init();
 		}
 
-		Class(int32_t version, ke::AString name, Class *super)
+		Class(int32_t version, const char *name, Class *super)
 			: name(name), super_class(super), version(version), dtor({NO_FORWARD})
 		{
 			if (super != nullptr)
@@ -61,7 +61,7 @@ namespace oo
 		}
 
 		Class(int32_t version)
-			: Class(version, ke::AString(), nullptr)
+			: Class(version, "", nullptr)
 		{
 			Init();
 		}

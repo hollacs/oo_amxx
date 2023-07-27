@@ -16,11 +16,10 @@ namespace oo
         Clear();
     }
 
-    Class* Manager::NewClass(const char *class_name, int32_t version, ke::AString name, Class *super)
+    Class* Manager::NewClass(const char *class_name, int32_t version, const char *name, Class *super)
     {
         auto in = m_classes.findForAdd(class_name);
-        Class *pcl = new Class(version, name, super);
-        m_classes.add(in, ke::AString(class_name), ke::Move(pcl));
+        m_classes.add(in, ke::AString(class_name), new Class(version, name, super));
         return in->value;
     }
 
