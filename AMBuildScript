@@ -82,7 +82,7 @@ class AMXXConfig(object):
     ]
     cxx.cxxflags += [
       '-Wno-invalid-offsetof',
-      '-std=c++17',
+      '-std=c++11',
     ]
 
     cxx.linkflags += ['-m32']
@@ -158,7 +158,7 @@ class AMXXConfig(object):
       '/EHsc',
       '/GR-',
       '/TP',
-      '/std:c++17',
+      '/std:c++11',
     ]
     cxx.linkflags += [
       '/MACHINE:X86',

@@ -25,9 +25,9 @@
  * -For both library and library class, you can use a comma
  *   to add multiple entries.
  */
-#define MODULE_NAME "OO: Object-Orientation"
+#define MODULE_NAME "Object-Orientation"
 #define MODULE_VERSION "1.0.0"
-#define MODULE_AUTHOR "Hon Fai"
+#define MODULE_AUTHOR "Hon Fai & holla"
 #define MODULE_URL ""
 #define MODULE_LOGTAG "OO"
 #define MODULE_LIBRARY "OO"

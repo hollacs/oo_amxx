@@ -1,70 +1,40 @@
-// 
-//		OO (Object-Oriention) support as a module enabled for AMX Mod X plugins.
-//		Copyright (C) 2022  Hon Fai
-// 
-//		This program is free software: you can redistribute itand /or modify 
-//		it under the terms of the GNU General Public License as published by 
-//		the Free Software Foundation, either version 3 of the License, or 
-//		(at your option) any later version.
-// 
-//		This program is distributed in the hope that it will be useful, 
-//		but WITHOUT ANY WARRANTY; without even the implied warranty of 
-//		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-//		GNU General Public License for more details.
-// 
-//		You should have received a copy of the GNU General Public License 
-//		along with this program. If not, see <https://www.gnu.org/licenses/>.
-// 
-
-
 #include "amxxmodule.h"
 #include "oo_class.h"
 #include "oo_manager.h"
 #include "oo_natives.h"
 
-/** AMXX attach
- * Do native functions init here (MF_AddNatives)
- */
 void OnAmxxAttach(void)
 {
 	static const AMX_NATIVE_INFO oo_natives[] =
 	{
-		{ "oo_class",	oo::natives::native_decl_class },
-		{ "oo_ctor",	oo::natives::native_decl_ctor },
-		{ "oo_dtor",	oo::natives::native_decl_dtor },
-		{ "oo_mthd",	oo::natives::native_decl_msg },
-		{ "oo_smthd",	oo::natives::native_decl_static_msg },
-		{ "oo_var",		oo::natives::native_decl_ivar },
+		{ "oo_class",	oo::native::native_class },
+		{ "oo_ctor",	oo::native::native_ctor },
+		{ "oo_dtor",	oo::native::native_dtor },
+		{ "oo_mthd",	oo::native::native_mthd },
+		{ "oo_smthd",	oo::native::native_smthd },
+		{ "oo_var",		oo::native::native_var },
 
-		{ "oo_isa",			oo::natives::native_isa },
-		{ "oo_subclass_of",	oo::natives::native_subclass_of	},
+		{ "oo_isa",			oo::native::native_isa },
+		{ "oo_subclass_of",	oo::native::native_subclass_of	},
 
-		{ "oo_new",			oo::natives::native_new },
-		{ "oo_delete",		oo::natives::native_delete },
-		{ "oo_call",		oo::natives::native_send },
-		{ "oo_get",			oo::natives::native_read },
-		{ "oo_set",			oo::natives::native_write },
+		{ "oo_new",			oo::native::native_new },
+		{ "oo_delete",		oo::native::native_delete },
+		{ "oo_call",		oo::native::native_call },
+		{ "oo_get",			oo::native::native_get },
+		{ "oo_set",			oo::native::native_set },
 
-		{ "oo_this",		oo::natives::native_this },
+		{ "oo_this",		oo::native::native_this },
 
-		{ "oo_this_ctor",	oo::natives::native_this_ctor },
-		{ "oo_super_ctor",	oo::natives::native_super_ctor },
+		{ "oo_super_ctor",	oo::native::native_super_ctor },
 
-		{ "oo_class_exists",	oo::natives::native_class_exists },
-		{ "oo_object_exists",	oo::natives::native_object_exists },
-		{ "oo_method_exists",   oo::natives::native_method_exists },
-		{ "oo_var_exists",		oo::natives::native_var_exists },
-		{ "oo_get_classname",	oo::natives::native_get_class_name },
+		{ "oo_class_exists",	oo::native::native_class_exists },
+		{ "oo_get_classname",	oo::native::native_get_classname },
 
 		{ nullptr, nullptr }
 	};
 	MF_AddNatives(oo_natives);
 }
 
-
-/** All plugins loaded
- * Do forward functions init here (MF_RegisterForward)
- */
 void OnPluginsLoaded(void)
 {
 	//::MessageBoxA(nullptr, "0", "", MB_OK);
@@ -76,65 +46,58 @@ void OnPluginsLoaded(void)
 			ForwardParam::FP_DONE)
 	);
 
-	//::MessageBoxA(nullptr, "1", "", MB_OK);
-
 	MF_PrintSrvConsole("[%s] Classes and their methods:\n", MODULE_LOGTAG);
-	for (auto &&cl : oo::Manager::Instance()->GetClasses())
+	for (auto iter = oo::Manager::Instance()->GetClasses().iter(); !iter.empty(); iter.next())
 	{
-		//::MessageBoxA(nullptr, "a", cl.first.c_str(), MB_OK);
-		MF_PrintSrvConsole("    %s (#%p)\n", cl.first.c_str(), static_cast<void *>(cl.second.get()));
+        auto cl = iter;
+		MF_PrintSrvConsole("    %s (#%p)\n", cl->key.chars(), cl->value.get());
+		oo::Class *pderived = cl->value->super_class;
+		while (pderived != nullptr)
 		{
-			int extra_tabs = 3;
-			std::shared_ptr<oo::Class> pderived = cl.second->super_class.lock();
-			while (pderived != nullptr)
-			{
-				MF_PrintSrvConsole("%s-> (#%p)\n", std::string(extra_tabs++ * 4, ' ').c_str(), static_cast<void*>(pderived.get()));
-				pderived = pderived->super_class.lock();
-			}
+			MF_PrintSrvConsole("            -> (#%p)\n", pderived);
+			pderived = pderived->super_class;
 		}
-
-		//::MessageBoxA(nullptr, "b", cl.first.c_str(), MB_OK);
-
+	
 		MF_PrintSrvConsole("         <Ctors>\n");
-		for (auto &&ct : cl.second->ctors)
+		for (auto iter = cl->value->ctors.iter(); !iter.empty(); iter.next())
 		{
-			MF_PrintSrvConsole("              %s@%d(", cl.first.c_str(), ct.first);
+            auto ct = iter;
+			MF_PrintSrvConsole("              %s@%d(", cl->key.chars(), ct->key);
 			int count = 0;
-			for (auto && arg : ct.second.args)
+			for (auto && arg : ct->value.args)
 			{
 				if (count++ > 0) MF_PrintSrvConsole(", ");
-				MF_PrintSrvConsole(std::to_string(arg).c_str());
+				MF_PrintSrvConsole("%d", arg);
 			}
 			MF_PrintSrvConsole(")\n");
 		}
 
 		MF_PrintSrvConsole("         <Methods>\n");
-		for (auto &&m : cl.second->methods)
+		for (auto iter = cl->value->methods.iter(); !iter.empty(); iter.next())
 		{
-			MF_PrintSrvConsole("              %s@%s(", cl.first.c_str(), m.first.c_str());
+			auto m = iter;
+			MF_PrintSrvConsole("              %s@%s(", cl->key.chars(), m->key.chars());
 			int count = 0;
-			for (auto && arg : m.second.args)
+			for (auto && arg : m->value.args)
 			{
 				if (count++ > 0) MF_PrintSrvConsole(", ");
-				MF_PrintSrvConsole(std::to_string(arg).c_str());
+				MF_PrintSrvConsole("%d", arg);
 			}
 			MF_PrintSrvConsole(")\n");
 		}
 
-		//::MessageBoxA(nullptr, "c", cl.first.c_str(), MB_OK);
-
 		MF_PrintSrvConsole("         <IVars>\n");
-		for (auto &&iv : cl.second->ivars)
-			MF_PrintSrvConsole("              %s@%s[%d]\n", cl.first.c_str(), iv.first.c_str(), iv.second);
-
-		//::MessageBoxA(nullptr, "d", cl.first.c_str(), MB_OK);
+		for (auto iter = cl->value->vars.iter(); !iter.empty(); iter.next())
+		{
+			auto v = iter;
+			MF_PrintSrvConsole("              %s@%s[%d]\n", cl->key.chars(), v->key.chars(), v->value);
+		}
 	}
 }
 
 void OnPluginsUnloaded()
 {
 	oo::Manager::Instance()->Clear();
-	//MF_PrintSrvConsole("OO Release memory\n");
 }
 
 void OnAmxxDetach()

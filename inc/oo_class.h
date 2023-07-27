@@ -1,133 +1,121 @@
-//		OO (Object-Oriention) support as a module enabled for AMX Mod X plugins.
-//		Copyright (C) 2022  Hon Fai
-// 
-//		This program is free software: you can redistribute itand /or modify 
-//		it under the terms of the GNU General Public License as published by 
-//		the Free Software Foundation, either version 3 of the License, or 
-//		(at your option) any later version.
-// 
-//		This program is distributed in the hope that it will be useful, 
-//		but WITHOUT ANY WARRANTY; without even the implied warranty of 
-//		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-//		GNU General Public License for more details.
-// 
-//		You should have received a copy of the GNU General Public License 
-//		along with this program. If not, see <https://www.gnu.org/licenses/>.
-// 
-
-
 #ifndef OO_CLASS_H
 #define OO_CLASS_H
 
-
-#include <memory>
-
-#include <string>
-#include <string_view>
-#include <unordered_map>
-#include <vector>
-
-#include <cassert>
-#include <cstdint>
+#include <amtl/am-string.h>
+#include <amtl/am-hashmap.h>
+#include <amtl/am-vector.h>
+#include "oo_policies.h"
 
 namespace oo
 {
-	using AmxxForward = int;
-	constexpr AmxxForward NO_FORWARD = -1;
-	using ArgList	  = std::vector<long>;
+	using AmxxForward 	= int;
+	using ArgList 		= ke::Vector<int8_t>;
+	KE_CONSTEXPR AmxxForward NO_FORWARD = -1;
 
 	struct Ctor
 	{
-		AmxxForward	forward_index;
-		ArgList		args;
+		AmxxForward forward_index;
+		ArgList 	args;
 	};
 
 	struct Dtor
 	{
-		AmxxForward	forward_index;
+		AmxxForward forward_index;
 	};
 
 	struct Method
 	{
-		AmxxForward	forward_index;
-		ArgList		args;
-		bool		is_static;
+		AmxxForward forward_index;
+		ArgList 	args;
+		bool 		is_static;
 	};
 
-	struct Class : std::enable_shared_from_this<Class>
+	struct Class
 	{
-		std::string									name;
-		std::weak_ptr<Class>						super_class;
-		int32_t										version;
-		int32_t										instance_size;
+		ke::AString name;
+		Class		*super_class;
+		int32_t 	version;
+		int32_t 	instance_size;
 
-		std::unordered_map<uint8_t, Ctor>			ctors;			// <key: #args>
-		Dtor										dtor;			// only one destructor
+		ke::HashMap<uint32_t, Ctor, IntegerPolicy> ctors;
+		Dtor dtor;
 
-		std::unordered_map<std::string, int8_t>		ivars;			// <key: ivar name,		value: ivar size>
-		std::unordered_map<std::string, Method>		methods;		// <key: method name>
+		ke::HashMap<ke::AString, int8_t, StringPolicy> vars;
+		ke::HashMap<ke::AString, Method, StringPolicy> methods;
 
-		Class()
+		Class() 
 			: version(0), instance_size(0), dtor({NO_FORWARD})
-		{}
-
-		Class(int32_t version, std::weak_ptr<Class> super, std::string name)
-			: name(name), super_class(super)
 		{
-			this->version = version;
+			Init();
+		}
 
-			if (!super.expired())
-				this->instance_size = super.lock()->instance_size;
+		Class(int32_t version, ke::AString name, Class *super)
+			: name(name), super_class(super), version(version), dtor({NO_FORWARD})
+		{
+			if (super != nullptr)
+				this->instance_size = super->instance_size;
 			else
 				this->instance_size = 0;
-
-			this->dtor.forward_index = NO_FORWARD;
+			
+			Init();
 		}
 
 		Class(int32_t version)
-			: Class(version, std::weak_ptr<Class>(), std::string()) {}
+			: Class(version, ke::AString(), nullptr)
+		{
+			Init();
+		}
+
+		void Init()
+		{
+			ctors.init();
+			vars.init();
+			methods.init();
+		}
 
 		void AddCtor(Ctor ctor)
 		{
-			std::size_t size = ctor.args.size();
-			this->ctors.insert(std::make_pair(size, std::move(ctor)));
+			size_t size = ctor.args.length();
+			auto in = this->ctors.findForAdd(size);
+			if (!in.found())
+				this->ctors.add(in, size, ke::Move(ctor));
 		}
 
 		void AssignDtor(Dtor dtor)
 		{
-			this->dtor = std::move(dtor);
+			this->dtor = ke::Move(dtor);
 		}
 
-		void AddIvar(std::string_view name, int8_t size)
+		void AddVar(const char *name, int8_t size)
 		{
 			this->instance_size += size;
-			this->ivars.insert(std::make_pair(name, size));
+			auto in = this->vars.findForAdd(name);
+			if (!in.found())
+				this->vars.add(in, ke::AString(name), size);
 		}
 
-		void AddMethod(std::string_view name, Method mthd)
+		void AddMethod(const char *name, Method mthd)
 		{
-			this->methods.insert(std::make_pair(name, std::move(mthd)));
+			auto in = this->methods.findForAdd(name);
+			if (!in.found())
+				this->methods.add(in, ke::AString(name), ke::Move(mthd));
 		}
 
-		bool IsClass(std::weak_ptr<Class> _class)
+		bool IsClass(Class *_class)
 		{
-			assert(!_class.expired());
-
-			return shared_from_this() == _class.lock();
+			return this == _class;
 		}
 
-		bool IsSubclassOf(std::weak_ptr<Class> super)
+		bool IsSubclassOf(Class *super)
 		{
-			assert(!super.expired());
+			Class *current = this->super_class;
 
-			std::shared_ptr<Class> pcurrent = this->super_class.lock();
-
-			while (pcurrent != nullptr)
+			while (current != nullptr)
 			{
-				if (pcurrent == super.lock())
+				if (current == super)
 					return true;
-
-				pcurrent = pcurrent->super_class.lock();
+				
+				current = current->super_class;
 			}
 
 			return false;
@@ -135,5 +123,4 @@ namespace oo
 	};
 }
 
-
-#endif // OO_CLASS_H
+#endif
