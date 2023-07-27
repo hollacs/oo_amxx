@@ -25,7 +25,8 @@ namespace oo
 
     ObjectHash Manager::NewObject(Class *isa)
     {
-        Object *obj = new Object(Object{isa});
+        Object *obj = new Object();
+        obj->isa = isa;
         obj->vars.init();
         Class *current = isa;
 
