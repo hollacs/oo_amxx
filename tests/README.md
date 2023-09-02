@@ -1,1 +1,0 @@
-You need to test them separately. (Because the class names will overlap)
