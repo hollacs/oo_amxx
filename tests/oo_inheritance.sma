@@ -5,49 +5,50 @@
 
 public oo_init()
 {
-	oo_class("Shape")
+	oo_class("Animal")
 	{
-		new cl[] = "Shape";
+		new cl[] = "Animal";
 
-		oo_var(cl, "width", 1);
+		oo_var(cl, "weight", 1);
 		oo_var(cl, "height", 1);
 
-		oo_mthd(cl, "SetWidth", @int{w});
+		oo_mthd(cl, "SetWeight", @int{w});
 		oo_mthd(cl, "SetHeight", @int{h});
 	}
 
-	oo_class("Rectangle", "Shape")
+	oo_class("Human", "Animal")
 	{
-		new cl[] = "Rectangle";
-		oo_mthd(cl, "GetArea");
+		new cl[] = "Human";
+		oo_mthd(cl, "GetBmi");
 	}
 }
 
-public Shape@SetWidth(w)
+public Animal@SetWeight(w)
 {
-	oo_set(oo_this(), "width", w);
+	oo_set(oo_this(), "weight", w);
 }
 
-public Shape@SetHeight(h)
+public Animal@SetHeight(h)
 {
 	oo_set(oo_this(), "height", h);
 }
 
-public Rectangle@GetArea()
+public Float:Human@GetBmi()
 {
 	new this = oo_this();
-	return oo_get(this, "width") * oo_get(this, "height");
+	new Float:height = oo_get(this, "height") / 100.0;
+	return oo_get(this, "weight") / (height * height);
 }
 
 public main()
 {
 	register_plugin("[OO] Inheritance", "0.1", "holla");
 
-	new Rectangle:rect = oo_new("Rectangle");
-	oo_call(rect, "SetWidth", 5);
-	oo_call(rect, "SetHeight", 7);
+	new Human:human = oo_new("Human");
+	oo_call(human, "SetWeight", 60);
+	oo_call(human, "SetHeight", 170);
 
-	server_print("Area of the rectangle is: %d", oo_call(rect, "GetArea"));
+	server_print("BMI of this human is: %.1f", oo_call(human, "GetBmi"));
 
-	oo_delete(rect);
+	oo_delete(human);
 }
