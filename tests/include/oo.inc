@@ -168,10 +168,10 @@ native bool:oo_class_exists(const class[]);
 native bool:oo_object_exists(any:this);
 
 /* Check if a method exists in a object */
-native bool:oo_method_exists(any:this, const mthd_name[]);
+//native bool:oo_method_exists(any:this, const mthd_name[]);
 
 /* Check if a variable exists in a object */
-native bool:oo_var_exists(any:this, const var_name[]);
+//native bool:oo_var_exists(any:this, const var_name[]);
 
 /* Get class name from a object */
 native oo_get_classname(any:this, output[], len);
