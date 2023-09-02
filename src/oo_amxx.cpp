@@ -28,6 +28,7 @@ void OnAmxxAttach(void)
 		{ "oo_super_ctor",	oo::native::native_super_ctor },
 
 		{ "oo_class_exists",	oo::native::native_class_exists },
+		{ "oo_object_exists",	oo::native::native_object_exists },
 		{ "oo_get_classname",	oo::native::native_get_classname },
 
 		{ nullptr, nullptr }

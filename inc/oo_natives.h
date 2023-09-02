@@ -37,6 +37,8 @@ namespace native
 
 	cell AMX_NATIVE_CALL native_class_exists(AMX* amx, cell *params);
 
+	cell AMX_NATIVE_CALL native_object_exists(AMX* amx, cell *params);
+
 	cell AMX_NATIVE_CALL native_get_classname(AMX *amx, cell *params);
 }}
 
