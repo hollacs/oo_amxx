@@ -582,7 +582,7 @@ namespace native
 		}
 
 		const char *classname = pobj->isa->name.chars();
-		if (!classname[0])
+		if (classname[0])
 		{
 			MF_SetAmxString(amx, params[2], classname, params[3]);
 		}
