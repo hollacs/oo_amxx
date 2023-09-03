@@ -259,18 +259,18 @@ Hello, my name is Bird, I'm 4 years old, and I say Tweet tweet
 Hello, my name is Snake, I'm 3 years old, and I say Sss sss
 Hello, my name is Unknown, I'm 0 years old, and I say I am an animal
 static method test
-Object #1308908446 IS a Snake
-Object #1308908446 IS NOT a Dog
+Object #162605491 IS a Snake
+Object #162605491 IS NOT a Dog
 Class Dog IS a subclass of Animal
 Class Animal IS NOT a subclass of Cat
 Class Bird IS exists
 Class Fish IS NOT exists
-Object #2015356015's classname is
-Object #2015356015 IS exists
+Object #1109119818's classname is Dog
+Object #1109119818 IS exists
 Dog has been euthanized.
 Cat has been euthanized.
 Bird has been euthanized.
 Snake has been euthanized.
 Unknown has been euthanized.
-Object #2015356015 IS NOT exists
+Object #1109119818 IS NOT exists
 ```
