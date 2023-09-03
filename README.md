@@ -250,3 +250,27 @@ public main()
 	server_print("Object #%d %s exists", animals[0], oo_object_exists(animals[0]) ? "IS" : "IS NOT");
 }
 ```
+
+outputs:
+```
+Hello, my name is Dog, I'm 7 years old, and I say Woof woof
+Hello, my name is Cat, I'm 6 years old, and I say Meow meow
+Hello, my name is Bird, I'm 4 years old, and I say Tweet tweet
+Hello, my name is Snake, I'm 3 years old, and I say Sss sss
+Hello, my name is Unknown, I'm 0 years old, and I say I am an animal
+static method test
+Object #1308908446 IS a Snake
+Object #1308908446 IS NOT a Dog
+Class Dog IS a subclass of Animal
+Class Animal IS NOT a subclass of Cat
+Class Bird IS exists
+Class Fish IS NOT exists
+Object #2015356015's classname is
+Object #2015356015 IS exists
+Dog has been euthanized.
+Cat has been euthanized.
+Bird has been euthanized.
+Snake has been euthanized.
+Unknown has been euthanized.
+Object #2015356015 IS NOT exists
+```
