@@ -6,7 +6,7 @@ Author: BB.O. & holla
 Credits: OKAPI module for inline assembly code
 
 Examples:
-```
+```sourcepawn
 #include <amxmodx>
 #include <oo>
 
