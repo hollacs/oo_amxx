@@ -67,7 +67,7 @@ stock const OO_VERSION_STR[] = "1.0.0";
 // oo_get_str(object, const name[], output_str[], len)
 // Examples:
 //   new name[32];
-//   oo_get_str(this, "name", name, charsmax(name));
+//   oo_get_str(this, "name", name, sizeof name);
 #define oo_get_str(%0,%1,%2,%3) 	oo_get(%0, %1, 0, %3, %2, 0, %3)
 
 // Set the value of the string-type variable from an object.
