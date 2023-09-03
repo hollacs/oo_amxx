@@ -128,12 +128,14 @@ public Animal@Introduce()
 
 	new age = oo_get(this, "age"); // Get integer value from the member variable of "age"
 
+	new legs = oo_call(this, "GetLegs");
+
 	// Call "MakeSound" function of this animal and retrieve the result to the msg[]
 	new msg[64];
 	oo_call(this, "MakeSound", msg, charsmax(msg));
 
 	// Print the introduction
-	server_print("Hello, my name is %s, I'm %d years old, and I say %s", name, age, msg);
+	server_print("Hello, my name is %s, I'm %d years old, I have %d legs, and I say %s", name, age, legs, msg);
 }
 
 public Animal@Test() { server_print("static method test"); }
