@@ -16,6 +16,8 @@
 //		along with this program. If not, see <https://www.gnu.org/licenses/>.
 // 
 
+#include <unordered_set>
+#include <queue>
 
 #include "amxxmodule.h"
 #include "oo_class.h"
@@ -52,8 +54,6 @@ void OnAmxxAttach(void)
 
 		{ "oo_class_exists",	oo::natives::native_class_exists },
 		{ "oo_object_exists",	oo::natives::native_object_exists },
-		{ "oo_method_exists",   oo::natives::native_method_exists },
-		{ "oo_var_exists",		oo::natives::native_var_exists },
 		{ "oo_get_classname",	oo::natives::native_get_class_name },
 
 		{ nullptr, nullptr }
@@ -85,12 +85,28 @@ void OnPluginsLoaded(void)
 		MF_PrintSrvConsole("    %s (#%p)\n", cl.first.c_str(), static_cast<void *>(cl.second.get()));
 		{
 			int extra_tabs = 3;
+
+			if (cl.second->super_classes.size() > 0)
+				MF_PrintSrvConsole("%s-> ", std::string(extra_tabs * 4, ' ').c_str());
+			
+			for (size_t i = 0; i < cl.second->super_classes.size(); i++)
+			{
+				auto derived = cl.second->super_classes[i].lock();
+				if (i > 0)
+					MF_PrintSrvConsole(", ");
+
+				MF_PrintSrvConsole("%s (#%p)", derived->name.c_str(), static_cast<void*>(derived.get()));
+			}
+
+			MF_PrintSrvConsole("\n");
+
+			/*
 			std::shared_ptr<oo::Class> pderived = cl.second->super_class.lock();
 			while (pderived != nullptr)
 			{
 				MF_PrintSrvConsole("%s-> (#%p)\n", std::string(extra_tabs++ * 4, ' ').c_str(), static_cast<void*>(pderived.get()));
 				pderived = pderived->super_class.lock();
-			}
+			}*/
 		}
 
 		//::MessageBoxA(nullptr, "b", cl.first.c_str(), MB_OK);

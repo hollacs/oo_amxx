@@ -30,13 +30,12 @@
 #include <cstddef>
 
 #include "oo_class.h"
+#include "oo_object.h"
 
 namespace oo
 {
 	using ObjectHash	= std::size_t;
 	constexpr ObjectHash OBJ_NULL = 0u;
-
-	struct Object;
 
 	class Manager
 	{
@@ -51,16 +50,16 @@ namespace oo
 		std::weak_ptr<Class>	ToClass(std::string_view class_name)	const;
 		std::weak_ptr<Object>	ToObject(ObjectHash object_hash)		const;
 
-		const Ctor*		FindCtor(std::weak_ptr<Class> cl, uint8_t num_args)			const;
-		const Method*	FindMethod(std::weak_ptr<Class> cl, std::string_view name)	const;
+		const Ctor* 	FindCtor(std::weak_ptr<Class> cl, uint8_t num_args) const;
+		const Method* 	FindMethod(std::weak_ptr<Class> cl, const std::string &name) const;
+		IVar*  			FindIVar(std::weak_ptr<Object> obj, const std::string &name) const;
 
-
-		ObjectHash				GetThis() const;
-		void					PushThis(ObjectHash next_this);
-		ObjectHash				PopThis();
+		ObjectHash 		GetThis() const;
+		void 			PushThis(ObjectHash next_this);
+		ObjectHash 		PopThis();
 
 		const std::unordered_map<std::string, std::shared_ptr<Class>>	&GetClasses(void) const	{ return m_classes; }
-		const std::unordered_map<size_t, std::shared_ptr<Object>>				&GetObjects(void) const { return m_objects; }
+		const std::unordered_map<size_t, std::shared_ptr<Object>>		&GetObjects(void) const { return m_objects; }
 
 		std::string_view GetObjectClassName(std::weak_ptr<Object> object) const;
 
@@ -73,7 +72,6 @@ namespace oo
 
 		std::unordered_map<std::string, std::shared_ptr<Class>>	m_classes;
 		std::unordered_map<size_t, std::shared_ptr<Object>>		m_objects;
-
 		std::stack<ObjectHash>	m_these;
 	};
 }

@@ -25,7 +25,10 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <stack>
 #include <vector>
+#include <unordered_set>
+#include <queue>
 
 #include <cassert>
 #include <cstdint>
@@ -57,7 +60,7 @@ namespace oo
 	struct Class : std::enable_shared_from_this<Class>
 	{
 		std::string									name;
-		std::weak_ptr<Class>						super_class;
+		std::vector<std::weak_ptr<Class>>			super_classes;
 		int32_t										version;
 		int32_t										instance_size;
 
@@ -67,33 +70,43 @@ namespace oo
 		std::unordered_map<std::string, int8_t>		ivars;			// <key: ivar name,		value: ivar size>
 		std::unordered_map<std::string, Method>		methods;		// <key: method name>
 
+		std::vector<std::weak_ptr<Class>>			mro;
+
 		Class()
 			: version(0), instance_size(0), dtor({NO_FORWARD})
 		{}
 
-		Class(int32_t version, std::weak_ptr<Class> super, std::string name)
-			: name(name), super_class(super)
+		Class(int32_t version, const std::string &name)
+			: name(name)
 		{
 			this->version = version;
+			this->dtor.forward_index = NO_FORWARD;
+		}
 
-			if (!super.expired())
-				this->instance_size = super.lock()->instance_size;
-			else
-				this->instance_size = 0;
+		Class(int32_t version, const std::vector<std::weak_ptr<Class>> &supers, const std::string &name)
+			: name(name)
+		{
+			this->super_classes = supers;
+			this->version = version;
+
+			for (size_t i = 0; i < supers.size(); i++)
+			{
+				this->instance_size += supers[i].lock()->instance_size;
+			}
 
 			this->dtor.forward_index = NO_FORWARD;
 		}
 
 		Class(int32_t version)
-			: Class(version, std::weak_ptr<Class>(), std::string()) {}
+			: Class(version, "") {}
 
-		void AddCtor(Ctor ctor)
+		void AddCtor(Ctor &&ctor)
 		{
 			std::size_t size = ctor.args.size();
 			this->ctors.insert(std::make_pair(size, std::move(ctor)));
 		}
 
-		void AssignDtor(Dtor dtor)
+		void AssignDtor(Dtor &&dtor)
 		{
 			this->dtor = std::move(dtor);
 		}
@@ -109,28 +122,49 @@ namespace oo
 			this->methods.insert(std::make_pair(name, std::move(mthd)));
 		}
 
-		bool IsClass(std::weak_ptr<Class> _class)
+		bool IsClass(std::weak_ptr<Class> cls)
 		{
-			assert(!_class.expired());
+			assert(!cls.expired());
 
-			return shared_from_this() == _class.lock();
+			return shared_from_this() == cls.lock();
 		}
 
-		bool IsSubclassOf(std::weak_ptr<Class> super)
+		bool IsSubclassOf(std::weak_ptr<Class> cls)
 		{
-			assert(!super.expired());
+			assert(!cls.expired());
 
-			std::shared_ptr<Class> pcurrent = this->super_class.lock();
-
-			while (pcurrent != nullptr)
+			for (auto current : mro)
 			{
-				if (pcurrent == super.lock())
+				if (current.lock() == cls.lock())
 					return true;
-
-				pcurrent = pcurrent->super_class.lock();
 			}
 
 			return false;
+		}
+
+		void InitMRO()
+		{
+			std::queue<std::weak_ptr<Class>> to_visit;
+			std::unordered_set<std::shared_ptr<Class>> visited;
+			to_visit.push(shared_from_this());
+
+			while (!to_visit.empty())
+			{
+				auto current = to_visit.front().lock();
+				to_visit.pop();
+
+				if (visited.find(current) == visited.end())
+				{
+					visited.insert(current);
+
+					for (auto super : current->super_classes)
+					{
+						to_visit.push(super);
+					}
+
+					mro.push_back(current);
+				}
+			}
 		}
 	};
 }

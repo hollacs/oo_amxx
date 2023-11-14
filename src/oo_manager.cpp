@@ -20,6 +20,8 @@
 
 #include <algorithm>
 #include <utility>
+#include <queue>
+#include <unordered_set>
 
 #include "oo_class.h"
 #include "oo_object.h"
@@ -41,11 +43,19 @@ namespace oo
 
 	ObjectHash Manager::NewObject(std::weak_ptr<Class> isa)
 	{
-		assert(!isa.expired());
-
 		std::shared_ptr<Object> pobj = std::make_shared<Object>(Object{ isa });
-		std::shared_ptr<Class> pcurrent = isa.lock();
 
+		for (auto current : isa.lock()->mro)
+		{
+			for (auto&& mi : current.lock()->ivars)
+			{
+				auto mi_name = current.lock()->name + "@" + mi.first;
+				auto mi_size = mi.second;
+				pobj->ivars.try_emplace(mi_name, mi_size);
+			}
+		}
+
+/*
 		while (pcurrent != nullptr)
 		{
 			for (auto&& mi : pcurrent->ivars)
@@ -57,6 +67,7 @@ namespace oo
 
 			pcurrent = pcurrent->super_class.lock();
 		}
+*/
 
 		auto obj_hash = std::hash<std::shared_ptr<Object>>{}(pobj);
 		m_objects.insert(std::make_pair(obj_hash, std::move(pobj)));
@@ -83,7 +94,7 @@ namespace oo
 		auto obj_iter = m_objects.find(object_hash);
 		if (obj_iter == m_objects.end())
 			return std::weak_ptr<Object>();
-
+		
 		return obj_iter->second;
 	}
 
@@ -91,6 +102,25 @@ namespace oo
 	{
 		assert(!cl.expired());
 
+		for (auto current : cl.lock()->mro)
+		{
+			auto ctor_iter = current.lock()->ctors.find(num_args);
+			if (ctor_iter != current.lock()->ctors.end())
+				return &ctor_iter->second;
+		}
+/*
+		Class::Iterator it(cl.lock());
+		auto current = cl.lock();
+		while (current != nullptr)
+		{
+			auto ctor_iter = current->ctors.find(num_args);
+			if (ctor_iter != current->ctors.end())
+				return &ctor_iter->second;
+
+			current = it.GetNext();
+		}
+*/
+/*
 		std::shared_ptr<Class> pcurrent = cl.lock();
 
 		while (pcurrent != nullptr)
@@ -101,14 +131,33 @@ namespace oo
 
 			pcurrent = pcurrent->super_class.lock();
 		}
-
+*/
 		return nullptr;
 	}
 
-	const Method* Manager::FindMethod(std::weak_ptr<Class> cl, std::string_view name) const
+	const Method* Manager::FindMethod(std::weak_ptr<Class> cl, const std::string &name) const
 	{
 		assert(!cl.expired());
 
+		for (auto current : cl.lock()->mro)
+		{
+			auto mthd_iter = current.lock()->methods.find(name);
+			if (mthd_iter != current.lock()->methods.end())
+				return &mthd_iter->second;
+		}
+/*
+		Class::Iterator it(cl.lock());
+		auto current = cl.lock();
+		while (current != nullptr)
+		{
+			auto mthd_iter = current->methods.find(std::string{ name });
+			if (mthd_iter != current->methods.end())
+				return &mthd_iter->second;
+
+			current = it.GetNext();
+		}
+*/
+		/*
 		std::shared_ptr<Class> pcurrent = cl.lock();
 
 		while (pcurrent != nullptr)
@@ -118,6 +167,28 @@ namespace oo
 				return &mthd_iter->second;
 
 			pcurrent = pcurrent->super_class.lock();
+		}*/
+
+		return nullptr;
+	}
+
+	IVar* Manager::FindIVar(std::weak_ptr<Object> obj, const std::string &name) const
+	{
+		auto isa = obj.lock()->isa.lock();
+		if (name.find('@') == std::string::npos)
+		{
+			for (auto current : isa->mro)
+			{
+				auto &&ivar_iter = obj.lock()->ivars.find(std::string(current.lock()->name + "@" + name));
+				if (ivar_iter != obj.lock()->ivars.end())
+					return &ivar_iter->second;
+			}
+		}
+		else
+		{
+			auto &&ivar_iter = obj.lock()->ivars.find(name);
+			if (ivar_iter != obj.lock()->ivars.end())
+				return &ivar_iter->second;
 		}
 
 		return nullptr;

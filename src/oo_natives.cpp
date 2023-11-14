@@ -32,14 +32,13 @@
 
 namespace oo::natives
 {
-	// native oo_decl_class(const class[], const base[] = "", const version_no = OO_VERSION_NUM);
+	// native oo_decl_class(const class[], any: ...);
 	// e.g.
 	// oo_decl_class("Base",	"");
 	// oo_decl_class("Derived",	"Base");
 	cell AMX_NATIVE_CALL native_decl_class(AMX *amx, cell *params)
 	{
 		std::string_view _class		= MF_GetAmxString(amx, params[1], 0, nullptr);
-		std::string_view _base		= MF_GetAmxString(amx, params[2], 1, nullptr);
 		int32_t _version_no = params[3];
 
 		if (!utils::IsLegit(_class))
@@ -54,15 +53,33 @@ namespace oo::natives
 			return 0;	// no success
 		}
 
-		std::weak_ptr<Class> super = Manager::Instance()->ToClass(_base);
-		if (!_base.empty() && super.expired())
+		uint8_t num_args = params[0] / sizeof(cell) - 1;
+		if (num_args == 0)
 		{
-			MF_LogError(amx, AMX_ERR_NATIVE, "%s: Base class (%s) not found", _class.data(), _base.data());
-			return 0;	// no success
+			Class new_class(OO_VERSION, std::string{_class});
+			auto c = Manager::Instance()->NewClass(_class, std::move(new_class));
+			c.lock()->InitMRO();
+			return 1;
 		}
 
-		Class new_class(_version_no, super, std::string{_class});
-		Manager::Instance()->NewClass(_class, std::move(new_class));
+		std::vector<std::weak_ptr<Class>> supers;
+
+		for (uint8_t i = 1u; i <= num_args; i++)
+		{
+			std::string _base = MF_GetAmxString(amx, params[i + 1], 1, nullptr);
+			std::weak_ptr<Class> super = Manager::Instance()->ToClass(_base);
+			if (!_base.empty() && super.expired())
+			{
+				MF_LogError(amx, AMX_ERR_NATIVE, "%s: Base class (%s) not found", _class.data(), _base.data());
+				return 0;	// no success
+			}
+
+			supers.push_back(super);
+		}
+
+		Class new_class(OO_VERSION, supers, std::string{_class});
+		auto c = Manager::Instance()->NewClass(_class, std::move(new_class));
+		c.lock()->InitMRO();
 
 		return 1;	// success
 	}
@@ -400,9 +417,6 @@ namespace oo::natives
 
 		ObjectHash hash = Manager::Instance()->NewObject(pclass);
 
-		auto &&classes = Manager::Instance()->GetClasses();
-		auto &&class_name = std::find_if(classes.begin(), classes.end(), [&](auto &&pair) { return pair.second.get() == pclass.get(); })->first;
-
 		uint8_t num_args = params[0] / sizeof(cell) - 1;
 
 		auto result = Manager::Instance()->FindCtor(pclass, num_args);
@@ -410,7 +424,7 @@ namespace oo::natives
 		{
 			if (num_args != 0)
 			{
-				MF_LogError(amx, AMX_ERR_NATIVE, "New %s: No such ctor (#args: %d)", class_name.c_str(), num_args);
+				MF_LogError(amx, AMX_ERR_NATIVE, "New %s: No such ctor (#args: %d)", pclass->name.c_str(), num_args);
 				return OBJ_NULL;	// 0- null
 			}
 
@@ -439,6 +453,30 @@ namespace oo::natives
 			return 0;
 		}
 
+		for (auto current : pobj->isa.lock()->mro)
+		{
+			auto && dtor = current.lock()->dtor;
+			if (dtor.forward_index > NO_FORWARD)
+			{
+				// call destructors
+				utils::ExecuteMethod(amx, params, dtor.forward_index, _this);
+			}
+		}
+/*
+		Class::Iterator it(pobj->isa.lock());
+		auto current = pobj->isa.lock();
+		while (current != nullptr)
+		{
+			auto && dtor = current->dtor;
+			if (dtor.forward_index > NO_FORWARD)
+			{
+				// call destructors
+				utils::ExecuteMethod(amx, params, dtor.forward_index, _this);
+			}
+			current = it.GetNext();
+		}
+*/
+		/*
 		std::shared_ptr<Class> pcurrent = pobj->isa.lock();
 		assert(pcurrent != nullptr);
 
@@ -452,7 +490,7 @@ namespace oo::natives
 				utils::ExecuteMethod(amx, params, dtor.forward_index, _this);
 			}
 		} while ((pcurrent = pcurrent->super_class.lock()) != nullptr);
-
+		*/
 		Manager::Instance()->DeleteObject(_this);
 		return 0;
 	}
@@ -512,9 +550,7 @@ namespace oo::natives
 				}
 				if (!pisa->IsSubclassOf(psuper))
 				{
-					auto&& classes = Manager::Instance()->GetClasses();
-					auto&& isa_name = std::find_if(classes.begin(), classes.end(), [&](auto&& pair) { return pair.second.get() == pisa.get(); })->first;
-					MF_LogError(amx, AMX_ERR_NATIVE, "Call of %s (super): %s is not a super class of %s", _name.data(), super_name.data(), isa_name.data());
+					MF_LogError(amx, AMX_ERR_NATIVE, "Call of %s (super): %s is not a super class of %s", _name.data(), pisa->name.data(), pisa->name.c_str());
 					return 0;
 				}
 
@@ -525,26 +561,23 @@ namespace oo::natives
 
 		auto &&classes = Manager::Instance()->GetClasses();
 
-		auto result = Manager::Instance()->FindMethod(pisa, _name);
+		auto result = Manager::Instance()->FindMethod(pisa, std::string{_name});
 		if (result == nullptr)
 		{
-			auto &&class_name = std::find_if(classes.begin(), classes.end(), [&](auto &&pair) { return pair.second.get() == pisa.get(); })->first;
-			MF_LogError(amx, AMX_ERR_NATIVE, "Call of %s@%s: No such method!", class_name.c_str(), _name.data());
+			MF_LogError(amx, AMX_ERR_NATIVE, "Call of %s@%s: No such method!", pisa->name.c_str(), _name.data());
 			return 0;
 		}
 
 		uint8_t num_args = params[0] / sizeof(cell) - 2;
 		if (num_args != result->args.size())
 		{
-			auto &&class_name = std::find_if(classes.begin(), classes.end(), [&](auto &&pair) { return pair.second.get() == pisa.get(); })->first;
-			MF_LogError(amx, AMX_ERR_NATIVE, "Call of %s@%s: #args doesn't match (expected: %d, now: %d)", class_name.c_str(), _name.data(), result->args.size(), num_args);
+			MF_LogError(amx, AMX_ERR_NATIVE, "Call of %s@%s: #args doesn't match (expected: %d, now: %d)", pisa->name.c_str(), _name.data(), result->args.size(), num_args);
 			return 0;
 		}
 
 		if (_this == 0 && !result->is_static)
 		{
-			auto&& class_name = std::find_if(classes.begin(), classes.end(), [&](auto&& pair) { return pair.second.get() == pisa.get(); })->first;
-			MF_LogError(amx, AMX_ERR_NATIVE, "Call of %s@%s: Not a static method", class_name.c_str(), _name.data());
+			MF_LogError(amx, AMX_ERR_NATIVE, "Call of %s@%s: Not a static method", pisa->name.c_str(), _name.data());
 			return 0;
 		}
 
@@ -563,46 +596,34 @@ namespace oo::natives
 	// oo_read(player, "m_Items", 0, 3, items, 0, 3);
 	cell AMX_NATIVE_CALL native_read(AMX *amx, cell *params)
 	{
-		ObjectHash _this		= params[1];
-		std::string_view _name	= MF_GetAmxString(amx, params[2], 0, nullptr);
+		ObjectHash _this 	= params[1];
+		std::string _name 	= MF_GetAmxString(amx, params[2], 0, nullptr);
 
 		std::shared_ptr<Object> pobj = Manager::Instance()->ToObject(_this).lock();
 		if (pobj == nullptr)
 		{
-			MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s: Object (%d) not found", _name.data(), _this);
+			MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s: Object (%d) not found", _name.c_str(), _this);
 			return 0;
 		}
 
-		std::shared_ptr<Class> pisa = pobj->isa.lock();
-		assert(pisa != nullptr);
-
-		auto && ivar_iter = pobj->ivars.find(std::string{ _name });
-
-		if (ivar_iter == pobj->ivars.end())
+		auto isa = pobj->isa.lock();
+		auto ivar = Manager::Instance()->FindIVar(pobj, _name);
+		if (ivar == nullptr)
 		{
-			auto &&classes = Manager::Instance()->GetClasses();
-			auto &&class_name = std::find_if(classes.begin(), classes.end(), [&](auto &&pair) { return pair.second.get() == pisa.get(); })->first;
-
-			MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s@%s: Not found", class_name.c_str(), _name.data());
+			MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s: Not found", _name.c_str());
 			return 0;
 		}
-
-		auto && ivar = ivar_iter->second;
 
 		uint8_t num_args = params[0] / sizeof(cell) - 2;
-
-		auto && ivar_size = ivar.size();
+		auto && ivar_size = ivar->size();
 
 		if (num_args == 0)	// get by return value
 		{
 			if (ivar_size == 1)
-				return ivar[0];
+				return (*ivar)[0];
 			else
 			{
-				auto &&classes = Manager::Instance()->GetClasses();
-				auto &&class_name = std::find_if(classes.begin(), classes.end(), [&](auto &&pair) { return pair.second.get() == pisa.get(); })->first;
-
-				MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s@%s: Is not a cell (size: %d), please copy by value instead", class_name.c_str(), _name.data(), ivar_size);
+				MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s: Is not a cell (size: %d), please copy by value instead", _name.c_str(), ivar_size);
 				return 0;
 			}
 		}
@@ -610,18 +631,15 @@ namespace oo::natives
 		{
 			if (ivar_size == 1)
 			{
-				MF_CopyAmxMemory(MF_GetAmxAddr(amx, params[3]), &ivar[0], 1);
-				return ivar[0];
+				MF_CopyAmxMemory(MF_GetAmxAddr(amx, params[3]), &(*ivar)[0], 1);
+				return (*ivar)[0];
 			}
 			else
 			{
 				if (num_args < 5)
 				{
-					auto &&classes = Manager::Instance()->GetClasses();
-					auto &&class_name = std::find_if(classes.begin(), classes.end(), [&](auto &&pair) { return pair.second.get() == pisa.get(); })->first;
-
-					MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s@%s: Required at least 5 args to get array values (now: %d)",
-						class_name.c_str(), _name.data(), num_args);
+					MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s: Required at least 5 args to get array values (now: %d)",
+						_name.c_str(), num_args);
 					return 0;
 				}
 
@@ -633,20 +651,17 @@ namespace oo::natives
 				std::size_t to_end		= *MF_GetAmxAddr(amx, params[7]);
 				std::size_t to_diff		= to_end - to_begin;
 
-				std::size_t cell_count	= std::clamp(from_diff, size_t(0), to_diff);
+				std::size_t cell_count	= std::clamp(from_diff, 0u, to_diff);
 
 				if ((from_begin + cell_count) > ivar_size)
 				{
-					auto &&classes = Manager::Instance()->GetClasses();
-					auto &&class_name = std::find_if(classes.begin(), classes.end(), [&](auto &&pair) { return pair.second.get() == pisa.get(); })->first;
-
-					MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s@%s: Is of size %d, but requested element #%d-%d",
-						class_name.c_str(), _name.data(), ivar.size(), from_begin, (from_begin + cell_count));
+					MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s: Is of size %d, but requested element #%d-%d",
+						_name.c_str(), ivar->size(), from_begin, (from_begin + cell_count));
 					return 0;
 				}
 
-				MF_CopyAmxMemory(MF_GetAmxAddr(amx, params[5]) + to_begin, &ivar[from_begin], cell_count);
-				return ivar[0];
+				MF_CopyAmxMemory(MF_GetAmxAddr(amx, params[5]) + to_begin, &(*ivar)[from_begin], cell_count);
+				return (*ivar)[0];
 			}
 		}
 
@@ -663,59 +678,44 @@ namespace oo::natives
 	cell AMX_NATIVE_CALL native_write(AMX *amx, cell *params)
 	{
 		ObjectHash _this		= params[1];
-		std::string_view _name	= MF_GetAmxString(amx, params[2], 0, nullptr);
+		std::string _name	= MF_GetAmxString(amx, params[2], 0, nullptr);
 
 		std::shared_ptr<Object> pobj = Manager::Instance()->ToObject(_this).lock();
 		if (pobj == nullptr)
 		{
-			MF_LogError(amx, AMX_ERR_NATIVE, "Writing IVar %s: Object (%d) not found", _name.data(), _this);
+			MF_LogError(amx, AMX_ERR_NATIVE, "Writing IVar %s: Object (%d) not found", _name.c_str(), _this);
 			return 0;
 		}
 
-		std::shared_ptr<Class> pisa = pobj->isa.lock();
-		assert(pisa != nullptr);
-
-		auto && ivar_iter = pobj->ivars.find(std::string{ _name });
-
-		if (ivar_iter == pobj->ivars.end())
+		auto isa = pobj->isa.lock();
+		auto ivar = Manager::Instance()->FindIVar(pobj, _name);
+		if (ivar == nullptr)
 		{
-			auto &&classes = Manager::Instance()->GetClasses();
-			auto &&class_name = std::find_if(classes.begin(), classes.end(), [&](auto &&pair) { return pair.second.get() == pisa.get(); })->first;
-
-			MF_LogError(amx, AMX_ERR_NATIVE, "Writing IVar %s@%s: Not found", class_name.c_str(), _name.data());
+			MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s: Not found", _name.c_str());
 			return 0;
 		}
-
-		auto && ivar = ivar_iter->second;
 
 		uint8_t num_args = params[0] / sizeof(cell) - 2;
-
-		auto && ivar_size = ivar.size();
+		auto && ivar_size = ivar->size();
 
 		if (ivar_size == 1)
 		{
 			if (num_args < 1)
 			{
-				auto &&classes = Manager::Instance()->GetClasses();
-				auto &&class_name = std::find_if(classes.begin(), classes.end(), [&](auto &&pair) { return pair.second.get() == pisa.get(); })->first;
-
-				MF_LogError(amx, AMX_ERR_NATIVE, "Writing IVar %s@%s: Required at least 1 arg to set a cell value (now: %d)",
-					class_name.c_str(), _name.data(), num_args);
+				MF_LogError(amx, AMX_ERR_NATIVE, "Writing IVar %s: Required at least 1 arg to set a cell value (now: %d)",
+					_name.c_str(), num_args);
 				return 0;
 			}
 
-			ivar[0] = *MF_GetAmxAddr(amx, params[3]);
-			return ivar[0];
+			(*ivar)[0] = *MF_GetAmxAddr(amx, params[3]);
+			return (*ivar)[0];
 		}
 		else
 		{
 			if (num_args < 5)
 			{
-				auto &&classes = Manager::Instance()->GetClasses();
-				auto &&class_name = std::find_if(classes.begin(), classes.end(), [&](auto &&pair) { return pair.second.get() == pisa.get(); })->first;
-
-				MF_LogError(amx, AMX_ERR_NATIVE, "Writing IVar %s@%s: Required at least 5 arg to set a cell value (now: %d)",
-					class_name.c_str(), _name.data(), num_args);
+				MF_LogError(amx, AMX_ERR_NATIVE, "Writing IVar %s: Required at least 5 arg to set a cell value (now: %d)",
+					_name.c_str(), num_args);
 				return 0;
 			}
 
@@ -731,18 +731,15 @@ namespace oo::natives
 
 			if ((to_begin + cell_count) > ivar_size)
 			{
-				auto &&classes = Manager::Instance()->GetClasses();
-				auto &&class_name = std::find_if(classes.begin(), classes.end(), [&](auto &&pair) { return pair.second.get() == pisa.get(); })->first;
-
-				MF_LogError(amx, AMX_ERR_NATIVE, "Writing IVar %s@%s: Is of size %d, but requested element #%d-%d",
-					class_name.c_str(), _name.data(), ivar.size(), to_begin, (to_begin + cell_count));
+				MF_LogError(amx, AMX_ERR_NATIVE, "Writing IVar %s: Is of size %d, but requested element #%d-%d",
+					_name.c_str(), ivar->size(), to_begin, (to_begin + cell_count));
 				return 0;
 			}
 
 			for (std::size_t i = 0; i < cell_count; i++)
-				ivar[to_begin + i] = *(MF_GetAmxAddr(amx, params[5]) + from_begin + i);
+				(*ivar)[to_begin + i] = *(MF_GetAmxAddr(amx, params[5]) + from_begin + i);
 
-			return ivar[0];
+			return (*ivar)[0];
 		}
 
 		// support for OO_STRING?
@@ -839,9 +836,7 @@ namespace oo::natives
 
 		if (!pisa->IsSubclassOf(psuper))
 		{
-			auto&& classes = Manager::Instance()->GetClasses();
-			auto&& isa_name = std::find_if(classes.begin(), classes.end(), [&](auto&& pair) { return pair.second.get() == pisa.get(); })->first;
-			MF_LogError(amx, AMX_ERR_NATIVE, "Call of %s constructor (super): %s is not a super class of %s", _superclass.data(), _superclass.data(), isa_name.data());
+			MF_LogError(amx, AMX_ERR_NATIVE, "Call of %s constructor (super): %s is not a super class of %s", _superclass.data(), _superclass.data(), pisa->name.c_str());
 			return 0;
 		}
 
@@ -866,76 +861,5 @@ namespace oo::natives
 		}
 
 		return 1;
-	}
-
-	cell AMX_NATIVE_CALL native_method_exists(AMX* amx, cell* params)
-	{
-		ObjectHash _this = params[1];
-		std::string_view _name = MF_GetAmxString(amx, params[2], 0, nullptr);
-		std::shared_ptr<Class> pisa = nullptr;
-
-		// calling any super class' method
-		auto&& class_limiter_pos = _name.find('@');
-		std::shared_ptr<Object> pobj = Manager::Instance()->ToObject(_this).lock();
-		if (pobj == nullptr)
-		{
-			MF_LogError(amx, AMX_ERR_NATIVE, "Object (%d) not found", _this);
-			return 0;
-		}
-
-		pisa = pobj->isa.lock();
-		assert(pisa != nullptr);
-
-		if (class_limiter_pos != std::string_view::npos)
-		{
-			std::string_view super_name = _name.substr(0, class_limiter_pos);
-			std::shared_ptr<Class> psuper = Manager::Instance()->ToClass(super_name).lock();
-			if (psuper == nullptr)
-			{
-				MF_LogError(amx, AMX_ERR_NATIVE, "Call of %s (super): No such class (%s)", _name.data(), super_name.data());
-				return 0;
-			}
-			if (!pisa->IsSubclassOf(psuper))
-			{
-				auto&& classes = Manager::Instance()->GetClasses();
-				auto&& isa_name = std::find_if(classes.begin(), classes.end(), [&](auto&& pair) { return pair.second.get() == pisa.get(); })->first;
-				MF_LogError(amx, AMX_ERR_NATIVE, "Call of %s (super): %s is not a super class of %s", _name.data(), super_name.data(), isa_name.data());
-				return 0;
-			}
-
-			_name = _name.substr(class_limiter_pos + 1);
-			pisa = psuper;
-		}
-
-		auto&& classes = Manager::Instance()->GetClasses();
-
-		auto result = Manager::Instance()->FindMethod(pisa, _name);
-		if (result == nullptr)
-			return false;
-
-		return true;
-	}
-
-	cell AMX_NATIVE_CALL native_var_exists(AMX* amx, cell* params)
-	{
-		ObjectHash _this = params[1];
-		std::string_view _name = MF_GetAmxString(amx, params[2], 0, nullptr);
-
-		std::shared_ptr<Object> pobj = Manager::Instance()->ToObject(_this).lock();
-		if (pobj == nullptr)
-		{
-			MF_LogError(amx, AMX_ERR_NATIVE, "Checking IVar %s: Object (%d) not found", _name.data(), _this);
-			return 0;
-		}
-
-		std::shared_ptr<Class> pisa = pobj->isa.lock();
-		assert(pisa != nullptr);
-
-		auto&& ivar_iter = pobj->ivars.find(std::string{ _name });
-
-		if (ivar_iter == pobj->ivars.end())
-			return false;
-
-		return true;
 	}
 }

@@ -27,6 +27,7 @@
  */
 #define MODULE_NAME "OO: Object-Orientation"
 #define MODULE_VERSION "1.0.0"
+#define OO_VERSION 100
 #define MODULE_AUTHOR "Hon Fai"
 #define MODULE_URL ""
 #define MODULE_LOGTAG "OO"
