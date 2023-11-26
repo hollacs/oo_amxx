@@ -68,7 +68,7 @@ stock const OO_VERSION_STR[] = "1.0.0";
 // Examples:
 //   new name[32];
 //   oo_get_str(this, "name", name, charsmax(name));
-#define oo_get_str(%0,%1,%2,%3) 	oo_get(%0, %1, 0, %3, %2, 0, %3)
+#define oo_get_str(%0,%1,%2,%3) 	oo_get(%0, %1, 0, %3+1, %2, 0, %3+1)
 
 // Set the value of the string-type variable from an object.
 // oo_set_str(any:this, const name[], const string[])
@@ -81,7 +81,7 @@ stock const OO_VERSION_STR[] = "1.0.0";
 // Examples:
 //   new array[3] = {3, 6, 9};
 //   oo_set(this, "items", array);
-#define oo_get_arr(%0,%1,%2)		oo_get(%0, %1, 0, 0, %2, 0, 0)
+#define oo_get_arr(%0,%1,%2,%3)		oo_get(%0, %1, 0, 0, %2, 0, %3)
 
 // Set the value of the array-type variable from an object.
 // oo_set_arr(any:this, const name[], const array[])
@@ -98,7 +98,7 @@ forward oo_init();
  * Declare a subclass (inherited from "Animal"):
  *   oo_class("Monkey", "Animal");
  */
-native oo_class(const class[], const base[] = "", version_no = OO_VERSION_NUM);
+native oo_class(const class[], any:...);
 
 /* Declare a constructor of a class:
  *
@@ -124,10 +124,10 @@ native oo_dtor(const class[], const name[]);
 /* Declare a method of a class:
  *
  * No paramters:
- *   oo_ctor("Animal", "Eat");
+ *   oo_mthd("Animal", "Eat");
  *
  * With parameters:
- *   oo_ctor("Animal", "Eat", @str{food_name}, @int{amount});
+ *   oo_mthd("Animal", "Eat", @str{food_name}, @int{amount});
  *
  * Again, declare a public function as follows:
  *   public Animal@Eat(const food_name[], amount) {}
@@ -166,12 +166,6 @@ native bool:oo_class_exists(const class[]);
 
 /* Check if an object exists */
 native bool:oo_object_exists(any:this);
-
-/* Check if a method exists in a object */
-native bool:oo_method_exists(any:this, const mthd_name[]);
-
-/* Check if a variable exists in a object */
-native bool:oo_var_exists(any:this, const var_name[]);
 
 /* Get class name from a object */
 native oo_get_classname(any:this, output[], len);
@@ -243,7 +237,7 @@ native oo_get(any:this, const name[], any: ...);
  * 
  * Set the values within a specific range of indexes to an array.
  *   new arr[5] = {1, 2, 3, 4, 5};
- *   oo_set(this, "test_array", 5, 11, arr, 0, 4);
+ *   oo_set(this, "test_array", 5, 11, arr, 0, 5);
  *
  * The above code set values from the arr[] (index 0 to 4) to the test_array[] (index 5 to 10);
  * For the simple version, please use the marco `oo_set_arr` and `oo_set_str`.
