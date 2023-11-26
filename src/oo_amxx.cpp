@@ -46,6 +46,8 @@ void OnAmxxAttach(void)
 		{ "oo_call",		oo::natives::native_send },
 		{ "oo_get",			oo::natives::native_read },
 		{ "oo_set",			oo::natives::native_write },
+		//{ "oo_get_str",		oo::natives::native_read_str },
+		//{ "oo_set_str",		oo::natives::native_write_str },
 
 		{ "oo_this",		oo::natives::native_this },
 

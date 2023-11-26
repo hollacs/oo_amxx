@@ -645,20 +645,21 @@ namespace oo::natives
 
 				std::size_t from_begin	= *MF_GetAmxAddr(amx, params[3]);
 				std::size_t from_end	= *MF_GetAmxAddr(amx, params[4]);
-				std::size_t from_diff	= from_end - from_begin;
+				std::size_t from_diff	= (from_end == 0) ? ivar_size : from_end - from_begin;
 
 				std::size_t to_begin	= *MF_GetAmxAddr(amx, params[6]);
 				std::size_t to_end		= *MF_GetAmxAddr(amx, params[7]);
-				std::size_t to_diff		= to_end - to_begin;
+				std::size_t to_diff		= (to_end == 0) ? ivar_size : to_end - to_begin;
 
 				std::size_t cell_count	= std::clamp(from_diff, 0u, to_diff);
-
+				cell_count = std::min(cell_count, ivar_size);
+				/*
 				if ((from_begin + cell_count) > ivar_size)
 				{
 					MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s: Is of size %d, but requested element #%d-%d",
 						_name.c_str(), ivar->size(), from_begin, (from_begin + cell_count));
 					return 0;
-				}
+				}*/
 
 				MF_CopyAmxMemory(MF_GetAmxAddr(amx, params[5]) + to_begin, &(*ivar)[from_begin], cell_count);
 				return (*ivar)[0];
@@ -668,7 +669,43 @@ namespace oo::natives
 
 		// support for OO_STRING?
 	}
+/*
+	// oo_get_str(this, const name[], str[], maxlen);
+	cell AMX_NATIVE_CALL native_read_str(AMX *amx, cell *params)
+	{
+		ObjectHash _this 	= params[1];
+		std::string _name 	= MF_GetAmxString(amx, params[2], 0, nullptr);
 
+		std::shared_ptr<Object> pobj = Manager::Instance()->ToObject(_this).lock();
+		if (pobj == nullptr)
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s: Object (%d) not found", _name.c_str(), _this);
+			return 0;
+		}
+
+		auto isa = pobj->isa.lock();
+		auto ivar = Manager::Instance()->FindIVar(pobj, _name);
+		if (ivar == nullptr)
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s: Not found", _name.c_str());
+			return 0;
+		}
+
+		uint8_t num_args = params[0] / sizeof(cell) - 2;
+		auto && ivar_size = ivar->size();
+
+		if (ivar_size == 1)
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s: Is not a string or array (size: %d), please get by cell instead", _name.c_str(), ivar_size);
+			return 0;
+		}
+
+		cell *dest = MF_GetAmxAddr(amx, params[3]);
+		int maxlen = std::clamp((int)params[4], 0, (int)ivar_size-1);
+
+		return MF_SetAmxString(amx, params[3], (char *)&(*ivar)[0], maxlen);
+	}
+*/
 
 	// native oo_write(Obj:this, const name[], any: ...);
 	// e.g.
@@ -727,14 +764,16 @@ namespace oo::natives
 			std::size_t from_end	= *MF_GetAmxAddr(amx, params[7]);
 			std::size_t from_diff	= (from_end == 0) ? ivar_size : from_end - from_begin;
 
-			std::size_t cell_count	= std::clamp(from_diff, size_t(0), to_diff);
+			std::size_t cell_count	= std::clamp(from_diff, 0u, to_diff);
+			cell_count = std::min(cell_count, ivar_size);
 
+			/*
 			if ((to_begin + cell_count) > ivar_size)
 			{
 				MF_LogError(amx, AMX_ERR_NATIVE, "Writing IVar %s: Is of size %d, but requested element #%d-%d",
 					_name.c_str(), ivar->size(), to_begin, (to_begin + cell_count));
 				return 0;
-			}
+			}*/
 
 			for (std::size_t i = 0; i < cell_count; i++)
 				(*ivar)[to_begin + i] = *(MF_GetAmxAddr(amx, params[5]) + from_begin + i);
@@ -744,7 +783,48 @@ namespace oo::natives
 
 		// support for OO_STRING?
 	}
+/*
+	// oo_set_str(this, const name[], const str[]);
+	cell AMX_NATIVE_CALL native_write_str(AMX *amx, cell *params)
+	{
+		ObjectHash _this 	= params[1];
+		std::string _name 	= MF_GetAmxString(amx, params[2], 0, nullptr);
 
+		std::shared_ptr<Object> pobj = Manager::Instance()->ToObject(_this).lock();
+		if (pobj == nullptr)
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s: Object (%d) not found", _name.c_str(), _this);
+			return 0;
+		}
+
+		auto isa = pobj->isa.lock();
+		auto ivar = Manager::Instance()->FindIVar(pobj, _name);
+		if (ivar == nullptr)
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s: Not found", _name.c_str());
+			return 0;
+		}
+
+		uint8_t num_args = params[0] / sizeof(cell) - 2;
+		auto && ivar_size = ivar->size();
+
+		if (ivar_size == 1)
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "Write IVar %s: Is not a string or array (size: %d), please set by cell instead", _name.c_str(), ivar_size);
+			return 0;
+		}
+
+		std::string str = MF_GetAmxString(amx, params[3], 1, nullptr);
+
+		cell *dest = MF_GetAmxAddr(amx, params[3]);
+		std::size_t len = std::clamp(str.length(), 0u, ivar_size);
+
+		for (std::size_t i = 0; i < len; i++)
+			(*ivar)[i] = str[i];
+
+		return len;
+	}
+*/
 
 	// native oo_this();
 	// e.g.

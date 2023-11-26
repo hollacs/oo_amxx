@@ -95,7 +95,7 @@ namespace oo::natives
 	// oo_read(player, "m_nHealth", health);
 	// oo_read(player, "m_Items", 0, 3, items, 0, 3);
 	cell AMX_NATIVE_CALL native_read(AMX *amx, cell *params);
-
+	//cell AMX_NATIVE_CALL native_read_str(AMX *amx, cell *params);
 
 	// native oo_write(Obj:this, const name[], any: ...);
 	// e.g.
@@ -103,7 +103,7 @@ namespace oo::natives
 	// oo_write(player, "m_nHealth", 100);
 	// oo_write(player, "m_Items", 0, 3, items, 0, 3);
 	cell AMX_NATIVE_CALL native_write(AMX *amx, cell *params);
-
+	//cell AMX_NATIVE_CALL native_write_str(AMX *amx, cell *params);
 
 	// native oo_this();
 	// e.g.
