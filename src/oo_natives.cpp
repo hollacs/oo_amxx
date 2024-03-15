@@ -467,7 +467,7 @@ namespace native
 				size_t to_diff		= (to_end == 0) ? var_size : to_end - to_begin;
 
 				size_t cell_count = util::clamp(from_diff, size_t(0), to_diff);
-				cell_count = __min(cell_count, var_size);
+				cell_count = (cell_count < var_size) ? cell_count : var_size;
 
 				MF_CopyAmxMemory(MF_GetAmxAddr(amx, params[5]) + to_begin, &(*var)[from_begin], cell_count);
 				return (*var)[0];
@@ -532,7 +532,7 @@ namespace native
 			size_t from_diff	= (from_end == 0) ? var_size : from_end - from_begin;
 
 			size_t cell_count	= util::clamp(from_diff, 0u, to_diff);
-			cell_count = __min(cell_count, var_size);
+			cell_count = (cell_count < var_size) ? cell_count : var_size;
 
 			for (std::size_t i = 0; i < cell_count; i++)
 				(*var)[to_begin + i] = *(MF_GetAmxAddr(amx, params[5]) + from_begin + i);
