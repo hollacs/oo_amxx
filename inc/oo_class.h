@@ -136,6 +136,7 @@ namespace oo
 		{
 			ke::Deque<Class *> to_visit;
 			ke::HashSet<Class *, ke::PointerPolicy<Class>> visited;
+			visited.init();
 			to_visit.append(this);
 
 			while (!to_visit.empty())

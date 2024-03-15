@@ -98,7 +98,7 @@ forward oo_init();
  * Declare a subclass (inherited from "Animal"):
  *   oo_class("Monkey", "Animal");
  */
-native oo_class(const class[], const base[] = "", version_no = OO_VERSION_NUM);
+native oo_class(const class[], any:...);
 
 /* Declare a constructor of a class:
  *

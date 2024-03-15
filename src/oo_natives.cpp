@@ -43,7 +43,8 @@ namespace native
 			supers.append(super);
 		}
 
-		Manager::Instance()->NewClass(_class, OO_VERSION, &supers);
+		auto c = Manager::Instance()->NewClass(_class, OO_VERSION, &supers);
+		c->InitMro();
 		return 1;
 	}
 
@@ -283,7 +284,7 @@ namespace native
 		{
 			if (num_args != 0)
 			{
-				MF_LogError(amx, AMX_ERR_NATIVE, "New %s: No such ctor (#args: %d)", class_name, num_args);
+				MF_LogError(amx, AMX_ERR_NATIVE, "New %s: No such ctor (#args: %d)", class_name.chars(), num_args);
 				return OBJ_NULL;
 			}
 		}

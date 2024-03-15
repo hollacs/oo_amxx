@@ -3,6 +3,7 @@
 #include "oo_class.h"
 #include "oo_object.h"
 #include <string.h>
+#include "amxxmodule.h"
 
 namespace oo
 {
@@ -37,7 +38,7 @@ namespace oo
             for (auto iter = current->vars.iter(); !iter.empty(); iter.next())
             {
                 ke::AString v_name;
-                v_name.format("%s@%s", current->name, iter->key);
+                v_name.format("%s@%s", current->name.chars(), iter->key.chars());
                 int8_t v_size = iter->value;
 
                 auto in = obj->vars.findForAdd(v_name.chars());
@@ -118,7 +119,7 @@ namespace oo
             for (size_t i = 0; i < isa->mro.length(); i++)
             {
                 auto current = isa->mro.at(i);
-                _name.format("%s@%s", current->name, name);
+                _name.format("%s@%s", current->name.chars(), name);
 
                 auto r = obj->vars.find(_name.chars());
                 if (r.found())
