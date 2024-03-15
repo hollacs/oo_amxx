@@ -3,7 +3,9 @@
 
 #include <amtl/am-string.h>
 #include <amtl/am-hashmap.h>
+#include <amtl/am-hashset.h>
 #include <amtl/am-vector.h>
+#include <amtl/am-deque.h>
 #include "oo_policies.h"
 
 namespace oo
@@ -32,36 +34,49 @@ namespace oo
 
 	struct Class
 	{
-		ke::AString name;
-		Class		*super_class;
 		int32_t 	version;
+		ke::AString name;
 		int32_t 	instance_size;
-
-		ke::HashMap<uint32_t, Ctor, IntegerPolicy> ctors;
 		Dtor dtor;
 
+		ke::Vector<Class *> super_classes;
+		ke::HashMap<uint32_t, Ctor, IntegerPolicy> ctors;
 		ke::HashMap<ke::AString, int8_t, StringPolicy> vars;
 		ke::HashMap<ke::AString, Method, StringPolicy> methods;
 
+		ke::Vector<Class *> mro;
+
 		Class() 
-			: version(0), instance_size(0), dtor({NO_FORWARD})
+			: version(0), name(""), instance_size(0), dtor({NO_FORWARD})
 		{
 			Init();
 		}
 
-		Class(int32_t version, const char *name, Class *super)
-			: name(name), super_class(super), version(version), dtor({NO_FORWARD})
+		Class(int32_t version, const char *name) : version(version), name(name), instance_size(0), dtor({NO_FORWARD})
 		{
-			if (super != nullptr)
-				this->instance_size = super->instance_size;
+			Init();
+		}
+
+		Class(int32_t version, const char *name, ke::Vector<Class *> *supers)
+			: version(version), name(name), dtor({NO_FORWARD})
+		{
+			if (supers != nullptr)
+			{
+				for (size_t i = 0; i < supers->length(); i++)
+				{
+					auto super = supers->at(i);
+					super_classes.append(super);
+					this->instance_size += super->instance_size;
+				}
+			}
 			else
 				this->instance_size = 0;
-			
+
 			Init();
 		}
 
 		Class(int32_t version)
-			: Class(version, "", nullptr)
+			: version(version), name(""), instance_size(0), dtor({NO_FORWARD})
 		{
 			Init();
 		}
@@ -108,17 +123,39 @@ namespace oo
 
 		bool IsSubclassOf(Class *super)
 		{
-			Class *current = this->super_class;
-
-			while (current != nullptr)
+			for (size_t i = 0; i < mro.length(); i++)
 			{
-				if (current == super)
+				if (mro[i] == super)
 					return true;
-				
-				current = current->super_class;
 			}
 
 			return false;
+		}
+
+		void InitMro()
+		{
+			ke::Deque<Class *> to_visit;
+			ke::HashSet<Class *, ke::PointerPolicy<Class>> visited;
+			to_visit.append(this);
+
+			while (!to_visit.empty())
+			{
+				auto current = to_visit.front();
+				to_visit.popFront();
+
+				auto r = visited.find(current);
+				if (!r.found())
+				{
+					visited.add(current);
+
+					for (size_t i = 0; i < current->super_classes.length(); i++)
+					{
+						to_visit.append(current->super_classes[i]);
+					}
+
+					mro.append(current);
+				}
+			}
 		}
 	};
 }

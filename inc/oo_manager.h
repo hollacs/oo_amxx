@@ -4,10 +4,10 @@
 #include <amtl/am-autoptr.h>
 #include <amtl/am-vector.h>
 #include <amtl/am-hashmap.h>
-// #include <amtl/am-stack.h> fuck you amxx
+#include <amtl/am-deque.h>
 
-#include "am-stack.h"
 #include "oo_class.h"
+#include "oo_object.h"
 
 namespace oo
 {
@@ -22,7 +22,7 @@ namespace oo
         Manager();
         ~Manager();
 
-        Class*      NewClass(const char* class_name, int32_t version, const char *name, Class *super);
+        Class*      NewClass(const char* class_name, int32_t version, ke::Vector<Class *> *supers);
         ObjectHash  NewObject(Class* isa);
         void        DeleteObject(ObjectHash object_hash);
 
@@ -31,10 +31,11 @@ namespace oo
 
         const Ctor*     FindCtor(Class* cl, uint8_t num_args)   const;
         const Method*   FindMethod(Class* cl, const char* name) const;
+        Var*            FindVar(Object *obj, const char *name)  const;
 
         ObjectHash  GetThis();
         void        PushThis(ObjectHash next_this);
-        ObjectHash  PopThis();
+        void  PopThis();
 
         ke::HashMap<ke::AString, ke::AutoPtr<Class>, StringPolicy> &GetClasses() 
         {
@@ -53,7 +54,7 @@ namespace oo
     private:
         ke::HashMap<ke::AString, ke::AutoPtr<Class>, StringPolicy>  m_classes;
         ke::HashMap<uint32_t, ke::AutoPtr<Object>, IntegerPolicy>   m_objects;
-        ke::Stack<uint32_t> m_these;
+        ke::Deque<uint32_t> m_these;
     };
 }
 

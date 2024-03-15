@@ -2,6 +2,7 @@
 
 #include "oo_class.h"
 #include "oo_object.h"
+#include <string.h>
 
 namespace oo
 {
@@ -16,10 +17,10 @@ namespace oo
         Clear();
     }
 
-    Class* Manager::NewClass(const char *class_name, int32_t version, const char *name, Class *super)
+    Class* Manager::NewClass(const char *class_name, int32_t version, ke::Vector<Class *> *supers)
     {
         auto in = m_classes.findForAdd(class_name);
-        m_classes.add(in, ke::AString(class_name), new Class(version, name, super));
+        m_classes.add(in, ke::AString(class_name), new Class(version, class_name, supers));
         return in->value;
     }
 
@@ -28,14 +29,16 @@ namespace oo
         Object *obj = new Object();
         obj->isa = isa;
         obj->vars.init();
-        Class *current = isa;
 
-        while (current != nullptr)
+        for (size_t i = 0; i < isa->mro.length(); i++)
         {
+            auto current = isa->mro[i];
+
             for (auto iter = current->vars.iter(); !iter.empty(); iter.next())
             {
-                auto &&v_name = iter->key;
-                auto &&v_size = iter->value;
+                ke::AString v_name;
+                v_name.format("%s@%s", current->name, iter->key);
+                int8_t v_size = iter->value;
 
                 auto in = obj->vars.findForAdd(v_name.chars());
                 if (!in.found())
@@ -45,8 +48,6 @@ namespace oo
                     obj->vars.add(in, v_name, ke::Move(var));
                 }
             }
-
-            current = current->super_class;
         }
 
         auto obj_hash = ke::HashPointer(obj);
@@ -82,15 +83,13 @@ namespace oo
 
     const Ctor* Manager::FindCtor(Class *cl, uint8_t num_args) const
     {
-        Class* current = cl;
-
-        while (current != nullptr)
+        for (size_t i = 0; i < cl->mro.length(); i++)
         {
+            auto current = cl->mro[i];
+
             auto r = current->ctors.find(num_args);
             if (r.found())
                 return &r->value;
-
-            current = current->super_class;
         }
 
         return nullptr;
@@ -98,15 +97,39 @@ namespace oo
 
     const Method* Manager::FindMethod(Class *cl, const char *name) const
     {
-        Class* current = cl;
-
-        while (current != nullptr)
+        for (size_t i = 0; i < cl->mro.length(); i++)
         {
+            auto current = cl->mro[i];
+
             auto r = current->methods.find(name);
             if (r.found())
                 return &r->value;
+        }
 
-            current = current->super_class;
+        return nullptr;
+    }
+
+    Var* Manager::FindVar(Object *obj, const char *name) const
+    {
+        auto isa = obj->isa;
+        if (strchr(name, '@') == NULL)
+        {
+            ke::AString _name;
+            for (size_t i = 0; i < isa->mro.length(); i++)
+            {
+                auto current = isa->mro.at(i);
+                _name.format("%s@%s", current->name, name);
+
+                auto r = obj->vars.find(_name.chars());
+                if (r.found())
+                    return &r->value;
+            }
+        }
+        else
+        {
+            auto r = obj->vars.find(name);
+            if (r.found())
+                return &r->value;
         }
 
         return nullptr;
@@ -114,24 +137,26 @@ namespace oo
 
     ObjectHash Manager::GetThis()
     {
-        return m_these.peek();
+        return m_these.back();
     }
 
 	void Manager::PushThis(ObjectHash next_this)
 	{
-		m_these.push(next_this);
+		m_these.append(next_this);
 	}
 
-    ObjectHash Manager::PopThis()
+    void Manager::PopThis()
     {
-        return m_these.pop();
+        m_these.popBack();
     }
 
     void Manager::Clear()
     {
         m_classes.clear();
         m_objects.clear();
-        m_these.clear();
+
+        while (!m_these.empty())
+            m_these.popBack();
     }
 
     Manager *Manager::Instance()

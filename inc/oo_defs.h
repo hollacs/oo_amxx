@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <amtl/am-cxx.h>
 
+KE_CONSTEXPR int OO_VERSION = 100;
+
 namespace oo
 {
 	KE_CONSTEXPR uint8_t IDENTIFIER_LEN	= 24u;

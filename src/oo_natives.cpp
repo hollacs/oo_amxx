@@ -3,6 +3,7 @@
 #include "oo_object.h"
 #include "oo_manager.h"
 #include "oo_utils.h"
+#include "oo_defs.h"
 
 namespace oo {
 namespace native
@@ -11,8 +12,6 @@ namespace native
 	cell AMX_NATIVE_CALL native_class(AMX *amx, cell *params)
 	{
 		const char *_class = MF_GetAmxString(amx, params[1], 0, nullptr);
-		const char *_base = MF_GetAmxString(amx, params[2], 1, nullptr);
-		int32_t _version = params[3];
 
 		Class *dup_class = Manager::Instance()->ToClass(_class);
 		if (dup_class != nullptr)
@@ -21,14 +20,30 @@ namespace native
 			return 0;
 		}
 
-		Class *super = Manager::Instance()->ToClass(_base);
-		if (_base[0] && super == nullptr)
+		uint8_t num_args = params[0] / sizeof(cell) - 1;
+		if (num_args == 0)
 		{
-			MF_LogError(amx, AMX_ERR_NATIVE, "%s: Base class (%s) not found", _class, _base);
-			return 0;
+			auto c = Manager::Instance()->NewClass(_class, OO_VERSION, nullptr);
+			c->InitMro();
+			return 1;
 		}
 
-		Manager::Instance()->NewClass(_class, _version, _class, super);
+		ke::Vector<Class *> supers;
+
+		for (uint8_t i = 1u; i <= num_args; i++)
+		{
+			const char *_base = MF_GetAmxString(amx, params[i + 1], 1, nullptr);
+			Class *super = Manager::Instance()->ToClass(_base);
+			if (super == nullptr)
+			{
+				MF_LogError(amx, AMX_ERR_NATIVE, "%s: Base class (%s) not found", _class, _base);
+				return 0;	// no success
+			}
+
+			supers.append(super);
+		}
+
+		Manager::Instance()->NewClass(_class, OO_VERSION, &supers);
 		return 1;
 	}
 
@@ -291,17 +306,14 @@ namespace native
 			return 0;
 		}
 
-		Class *pcurrent = pobj->isa;
-
-		do
+		for (size_t i = 0; i < pobj->isa->mro.length(); i++)
 		{
-			auto &&dtor = pcurrent->dtor;
+			auto &&dtor = pobj->isa->mro.at(i)->dtor;
 			if (dtor.forward_index > NO_FORWARD)
 			{
 				util::ExecuteMethod(amx, params, dtor.forward_index, _this);
 			}
-
-		} while ((pcurrent = pcurrent->super_class) != nullptr);
+		}
 		
 		Manager::Instance()->DeleteObject(_this);
 		return 0;
@@ -400,33 +412,32 @@ namespace native
 		Object *pobj = Manager::Instance()->ToObject(_this);
 		if (pobj == nullptr)
 		{
-			MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s: Object (%d) not found", _name, _this);
+			MF_LogError(amx, AMX_ERR_NATIVE, "Reading Var %s: Object (%d) not found", _name, _this);
 			return 0;
 		}
 
 		Class *pisa = pobj->isa;
 		assert(pisa != nullptr);
 
-		auto var_r = pobj->vars.find(_name);
-		if (!var_r.found())
+		auto var = Manager::Instance()->FindVar(pobj, _name);
+		if (var == nullptr)
 		{
-			MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s@%s: Not found", pisa->name.chars(), _name);
+			MF_LogError(amx, AMX_ERR_NATIVE, "Reading Var %s: Not found", _name);
 			return 0;
 		}
 
-		auto &&var = var_r->value;
 		uint8_t num_args = params[0] / sizeof(cell) - 2;
-		auto var_size = var.length();
+		auto var_size = var->length();
 
 		if (num_args == 0)
 		{
 			if (var_size == 1)
 			{
-				return var[0];
+				return (*var)[0];
 			}
 			else
 			{
-				MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s@%s: Is not a cell (size: %d), please copy by value instead", pisa->name.chars(), _name, var_size);
+				MF_LogError(amx, AMX_ERR_NATIVE, "Reading Var %s: Is not a cell (size: %d), please copy by value instead", _name, var_size);
 				return 0;
 			}
 		}
@@ -434,39 +445,35 @@ namespace native
 		{
 			if (var_size == 1)
 			{
-				MF_CopyAmxMemory(MF_GetAmxAddr(amx, params[3]), (cell*)&var[0], 1);
-				return var[0];
+				MF_CopyAmxMemory(MF_GetAmxAddr(amx, params[3]), &(*var)[0], 1);
+				return (*var)[0];
 			}
 			else
 			{
 				if (num_args < 5)
 				{
-					MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s@%s: Required at least 5 args to get array values (now: %d)",
-						pisa->name.chars(), _name, num_args);
+					MF_LogError(amx, AMX_ERR_NATIVE, "Reading Var %s: Required at least 5 args to get array values (now: %d)",
+						_name, num_args);
 					return 0;
 				}
 
 				size_t from_begin	= *MF_GetAmxAddr(amx, params[3]);
 				size_t from_end		= *MF_GetAmxAddr(amx, params[4]);
-				size_t from_diff	= from_end - from_begin;
+				size_t from_diff	= (from_end == 0) ? var_size : from_end - from_begin;
 
 				size_t to_begin		= *MF_GetAmxAddr(amx, params[6]);
 				size_t to_end		= *MF_GetAmxAddr(amx, params[7]);
-				size_t to_diff		= to_end - to_begin;
+				size_t to_diff		= (to_end == 0) ? var_size : to_end - to_begin;
 
 				size_t cell_count = util::clamp(from_diff, size_t(0), to_diff);
+				cell_count = __min(cell_count, var_size);
 
-				if ((from_begin + cell_count) > var_size)
-				{
-					MF_LogError(amx, AMX_ERR_NATIVE, "Reading IVar %s@%s: Is of size %d, but requested element #%d-%d",
-						pisa->name.chars(), _name, var.length(), from_begin, (from_begin + cell_count));
-					return 0;
-				}
-
-				MF_CopyAmxMemory(MF_GetAmxAddr(amx, params[5]) + to_begin, (cell*)&var[from_begin], cell_count);
-				return var[0];
+				MF_CopyAmxMemory(MF_GetAmxAddr(amx, params[5]) + to_begin, &(*var)[from_begin], cell_count);
+				return (*var)[0];
 			}
 		}
+
+		return 0;
 	}
 
 	cell AMX_NATIVE_CALL native_set(AMX *amx, cell *params)
@@ -477,42 +484,41 @@ namespace native
 		Object *pobj = Manager::Instance()->ToObject(_this);
 		if (pobj == nullptr)
 		{
-			MF_LogError(amx, AMX_ERR_NATIVE, "Writing IVar %s: Object (%d) not found", _name, _this);
+			MF_LogError(amx, AMX_ERR_NATIVE, "Writing Var %s: Object (%d) not found", _name, _this);
 			return 0;
 		}
 
 		Class *pisa = pobj->isa;
 		assert(pisa != nullptr);
 
-		auto var_r = pobj->vars.find(_name);
-		if (!var_r.found())
+		auto var = Manager::Instance()->FindVar(pobj, _name);
+		if (var == nullptr)
 		{
-			MF_LogError(amx, AMX_ERR_NATIVE, "Writing IVar %s@%s: Not found", pisa->name.chars(), _name);
+			MF_LogError(amx, AMX_ERR_NATIVE, "Writing Var %s: Not found", _name);
 			return 0;
 		}
 
-		auto &&var = var_r->value;
 		uint8_t num_args = params[0] / sizeof(cell) - 2;
-		auto &&var_size = var.length();
+		auto &&var_size = var->length();
 
 		if (var_size == 1)
 		{
 			if (num_args < 1)
 			{
-				MF_LogError(amx, AMX_ERR_NATIVE, "Writing IVar %s@%s: Required at least 1 arg to set a cell value (now: %d)",
-					pisa->name.chars(), _name, num_args);
+				MF_LogError(amx, AMX_ERR_NATIVE, "Writing Var %s: Required at least 1 arg to set a cell value (now: %d)",
+					_name, num_args);
 				return 0;
 			}
 
-			var[0] = *MF_GetAmxAddr(amx, params[3]);
-			return var[0];
+			(*var)[0] = *MF_GetAmxAddr(amx, params[3]);
+			return (*var)[0];
 		}
 		else
 		{
 			if (num_args < 5)
 			{
-				MF_LogError(amx, AMX_ERR_NATIVE, "Writing IVar %s@%s: Required at least 5 arg to set a cell value (now: %d)",
-					pisa->name.chars(), _name, num_args);
+				MF_LogError(amx, AMX_ERR_NATIVE, "Writing Var %s: Required at least 5 arg to set a cell value (now: %d)",
+					_name, num_args);
 				return 0;
 			}
 
@@ -524,19 +530,13 @@ namespace native
 			size_t from_end		= *MF_GetAmxAddr(amx, params[7]);
 			size_t from_diff	= (from_end == 0) ? var_size : from_end - from_begin;
 
-			size_t cell_count	= util::clamp(from_diff, size_t(0), to_diff);
-
-			if ((to_begin + cell_count) > var_size)
-			{
-				MF_LogError(amx, AMX_ERR_NATIVE, "Writing IVar %s@%s: Is of size %d, but requested element #%d-%d",
-					pisa->name.chars(), _name, var.length(), to_begin, (to_begin + cell_count));
-				return 0;
-			}
+			size_t cell_count	= util::clamp(from_diff, 0u, to_diff);
+			cell_count = __min(cell_count, var_size);
 
 			for (std::size_t i = 0; i < cell_count; i++)
-				var[to_begin + i] = *(MF_GetAmxAddr(amx, params[5]) + from_begin + i);
+				(*var)[to_begin + i] = *(MF_GetAmxAddr(amx, params[5]) + from_begin + i);
 
-			return var[0];
+			return (*var)[0];
 		}
 	}
 

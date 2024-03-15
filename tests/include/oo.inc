@@ -54,14 +54,14 @@ stock const OO_VERSION_STR[] = "1.0.0";
 #define @vec3			OO_VEC3
 #define @array[%0]		OO_ARRAY[%0]
 
-#define @int{%0} 		@cell
-#define @bool{%0}		@cell
-#define @fl{%0}			@float
-#define @ref{%0}		@byref
-#define @str{%0}		@string
-#define @stref{%0}		@stringex
-#define @vec{%0[%1]}	@array[%1]
-#define @arr{%0[%1]}	@array[%1]
+#define @int(%0) 		@cell
+#define @bool(%0)		@cell
+#define @fl(%0)			@float
+#define @ref(%0)		@byref
+#define @str(%0)		@string
+#define @stref(%0)		@stringex
+#define @vec(%0[%1])	@array[%1]
+#define @arr(%0[%1])	@array[%1]
 
 // Get the value of the string-type variable from an object.
 // oo_get_str(object, const name[], output_str[], len)

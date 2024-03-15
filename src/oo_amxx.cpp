@@ -47,17 +47,25 @@ void OnPluginsLoaded(void)
 			ForwardParam::FP_DONE)
 	);
 
-	MF_PrintSrvConsole("[%s] Classes and their methods:\n", MODULE_LOGTAG);
+	MF_PrintSrvConsole("[%s] Classes and their methods and variables:\n", MODULE_LOGTAG);
 	for (auto iter = oo::Manager::Instance()->GetClasses().iter(); !iter.empty(); iter.next())
 	{
         auto cl = iter;
 		MF_PrintSrvConsole("    %s (#%p)\n", cl->key.chars(), cl->value.get());
-		oo::Class *pderived = cl->value->super_class;
-		while (pderived != nullptr)
+		
+		if (cl->value->super_classes.length() > 0)
+			MF_PrintSrvConsole("            -> ");
+
+		for (size_t i = 0; i < cl->value->super_classes.length(); i++)
 		{
-			MF_PrintSrvConsole("            -> (#%p)\n", pderived);
-			pderived = pderived->super_class;
+			auto derived = cl->value->super_classes[i];
+			if (i > 0)
+				MF_PrintSrvConsole(", ");
+
+			MF_PrintSrvConsole("%s (#%p)", derived->name.chars(), derived);
 		}
+
+		MF_PrintSrvConsole("\n");
 	
 		MF_PrintSrvConsole("         <Ctors>\n");
 		for (auto iter = cl->value->ctors.iter(); !iter.empty(); iter.next())
@@ -81,13 +89,15 @@ void OnPluginsLoaded(void)
 			int count = 0;
 			for (auto && arg : m->value.args)
 			{
-				if (count++ > 0) MF_PrintSrvConsole(", ");
+				if (count++ > 0)
+					MF_PrintSrvConsole(", ");
+
 				MF_PrintSrvConsole("%d", arg);
 			}
 			MF_PrintSrvConsole(")\n");
 		}
 
-		MF_PrintSrvConsole("         <IVars>\n");
+		MF_PrintSrvConsole("         <Vars>\n");
 		for (auto iter = cl->value->vars.iter(); !iter.empty(); iter.next())
 		{
 			auto v = iter;
