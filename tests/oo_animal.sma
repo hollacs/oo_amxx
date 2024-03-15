@@ -14,13 +14,13 @@ public oo_init()
 		oo_var(cl, "name", 32); // A attribute that stores the name of the animal
 
 		// A constructor that takes the name and the age of the animal
-		oo_ctor(cl, "Ctor", @str{name}, @int{age});
+		oo_ctor(cl, "Ctor", @str(name), @int(age));
 
 		// A destructor of the animal
 		oo_dtor(cl, "Dtor");
 
 		// A function that returns the sound of the animal
-		oo_mthd(cl, "MakeSound", @stref{msg}, @int{len});
+		oo_mthd(cl, "MakeSound", @stref(msg), @int(len));
 
 		// A function that returns the number of legs of the animal
 		oo_mthd(cl, "GetLegs");
@@ -37,10 +37,10 @@ public oo_init()
 		new cl[] = "Dog";
 
 		// A constructor that calls the base class constructor with the name "Dog"
-		oo_ctor(cl, "Ctor", @int{age});
+		oo_ctor(cl, "Ctor", @int(age));
 
 		// An override function that returns the sound of a dog
-		oo_mthd(cl, "MakeSound", @stref{msg}, @int{len});
+		oo_mthd(cl, "MakeSound", @stref(msg), @int(len));
 
 		// An override function that returns the number of legs of a dog
 		oo_mthd(cl, "GetLegs");
@@ -52,10 +52,10 @@ public oo_init()
 		new cl[] = "Cat";
 
 		// A constructor that calls the base class constructor with the name "Cat"
-		oo_ctor(cl, "Ctor", @int{age});
+		oo_ctor(cl, "Ctor", @int(age));
 
 		// An override function that returns the sound of a cat
-		oo_mthd(cl, "MakeSound", @stref{msg}, @int{len});
+		oo_mthd(cl, "MakeSound", @stref(msg), @int(len));
 
 		// An override function that returns the number of legs of a cat
 		oo_mthd(cl, "GetLegs");
@@ -67,10 +67,10 @@ public oo_init()
 		new cl[] = "Bird";
 
 		// A constructor that calls the base class constructor with the name "Bird"
-		oo_ctor(cl, "Ctor", @int{age});
+		oo_ctor(cl, "Ctor", @int(age));
 
 		// An override function that returns the sound of a bird
-		oo_mthd(cl, "MakeSound", @stref{msg}, @int{len});
+		oo_mthd(cl, "MakeSound", @stref(msg), @int(len));
 
 		// An override function that returns the number of legs of a bird
 		oo_mthd(cl, "GetLegs");
@@ -82,10 +82,10 @@ public oo_init()
 		new cl[] = "Snake";
 
 		// A constructor that calls the base class constructor with the name "Snake"
-		oo_ctor(cl, "Ctor", @int{age});
+		oo_ctor(cl, "Ctor", @int(age));
 
 		// An override function that returns the sound of a snake
-		oo_mthd(cl, "MakeSound", @stref{msg}, @int{len});
+		oo_mthd(cl, "MakeSound", @stref(msg), @int(len));
 
 		// An override function that returns the number of legs of a snake
 		oo_mthd(cl, "GetLegs");
@@ -226,19 +226,19 @@ public main()
 	server_print("Class Dog %s a subclass of Animal", oo_subclass_of("Dog", "Animal") ? "IS" : "IS NOT");
 	server_print("Class Animal %s a subclass of Cat", oo_subclass_of("Animal", "Cat") ? "IS" : "IS NOT");
 
-	server_print("Class Bird %s exists", oo_class_exists("Bird") ? "IS" : "IS NOT");
-	server_print("Class Fish %s exists", oo_class_exists("Fish") ? "IS" : "IS NOT");
+	server_print("Class Bird %s", oo_class_exists("Bird") ? "EXISTS" : "DOES NOT EXIST");
+	server_print("Class Fish %s", oo_class_exists("Fish") ? "EXISTS" : "DOES NOT EXIST");
 
 	new class[32];
 	oo_get_classname(animals[0], class, charsmax(class));
 	server_print("Object #%d's classname is %s", animals[0], class);
 
-	server_print("Object #%d %s exists", animals[0], oo_object_exists(animals[0]) ? "IS" : "IS NOT");
+	server_print("Object #%d %s", animals[0], oo_object_exists(animals[0]) ? "EXISTS" : "DOES NOT EXIST");
 
 	for (new i = 0; i < 5; i++)
 	{
 		oo_delete(animals[i]); // Delete each animal objects
 	}
 
-	server_print("Object #%d %s exists", animals[0], oo_object_exists(animals[0]) ? "IS" : "IS NOT");
+	server_print("Object #%d %s", animals[0], oo_object_exists(animals[0]) ? "EXISTS" : "DOES NOT EXIST");
 }

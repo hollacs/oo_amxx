@@ -27,9 +27,9 @@
 #pragma loadlib oo
 #endif
 
-#define OO_VERSION		1.0.0
-#define OO_VERSION_NUM	100
-stock const OO_VERSION_STR[] = "1.0.0";
+#define OO_VERSION		1.1.0
+#define OO_VERSION_NUM	110
+stock const OO_VERSION_STR[] = "1.1.0";
 
 #define @null 				any:0 // null object
 #define @this 				oo_this() // this object

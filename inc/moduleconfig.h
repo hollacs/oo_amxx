@@ -26,7 +26,7 @@
  *   to add multiple entries.
  */
 #define MODULE_NAME "Object-Orientation"
-#define MODULE_VERSION "1.0.0"
+#define MODULE_VERSION "1.1.0"
 #define MODULE_AUTHOR "Hon Fai & holla"
 #define MODULE_URL ""
 #define MODULE_LOGTAG "OO"

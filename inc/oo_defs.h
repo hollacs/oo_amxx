@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <amtl/am-cxx.h>
 
-KE_CONSTEXPR int OO_VERSION = 100;
+KE_CONSTEXPR int OO_VERSION = 110;
 
 namespace oo
 {
