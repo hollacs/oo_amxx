@@ -38,6 +38,7 @@ stock const OO_VERSION_STR[] = "1.1.0";
 
 #define OO_CELL			(1)		// cell
 #define OO_FLOAT		(1)		// float
+#define OO_OBJECT		(1)		// object
 #define OO_BYREF		(0) 	// cell or float by reference
 #define OO_STRING		(-1) 	// const string[]
 #define OO_STRING_EX 	(-2) 	// string[]
@@ -53,6 +54,7 @@ stock const OO_VERSION_STR[] = "1.1.0";
 #define @vec2			OO_VEC2
 #define @vec3			OO_VEC3
 #define @array[%0]		OO_ARRAY[%0]
+#define @object 		OO_OBJECT
 
 #define @int(%0) 		@cell
 #define @bool(%0)		@cell
@@ -62,6 +64,7 @@ stock const OO_VERSION_STR[] = "1.1.0";
 #define @stref(%0)		@stringex
 #define @vec(%0[%1])	@array[%1]
 #define @arr(%0[%1])	@array[%1]
+#define @obj(%0)		@object
 
 // Get the value of the string-type variable from an object.
 // oo_get_str(object, const name[], output_str[], len)
