@@ -280,7 +280,7 @@ Object #461123433 DOES NOT EXIST
 ## Multiple Inheritance
 For the version of 1.1.0, now support multiple inheritance! \
 Example:
-```
+```sourcepawn
 #include <amxmodx>
 #include <oo>
 
