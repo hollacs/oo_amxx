@@ -10,6 +10,10 @@ namespace oo
 {
 	KE_CONSTEXPR uint8_t IDENTIFIER_LEN	= 24u;
 
+	KE_CONSTEXPR int8_t OO_CONTINUE = 0;
+	KE_CONSTEXPR int8_t OO_SUPERCEDE = 1;
+	KE_CONSTEXPR int8_t OO_BREAK = 2;
+
 	KE_CONSTEXPR int8_t OO_STRING_EX    = -2;
 	KE_CONSTEXPR int8_t OO_STRING       = -1;
 	KE_CONSTEXPR int8_t OO_BYREF        = 0;

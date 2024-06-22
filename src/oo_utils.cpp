@@ -3,7 +3,6 @@
 #include "assembly_create.h"
 #include "memory_.h"
 #include "oo_defs.h"
-#include "oo_manager.h"
 
 namespace oo { 
 namespace util
@@ -72,10 +71,8 @@ namespace util
 		return reinterpret_cast<long(*)()>(block)();
 	}
 
-	cell ExecuteMethod(AMX *amx, cell *params, AmxxForward forward_id, ObjectHash this_hash, const ArgList* args, int8_t start_param)
+	cell ExecuteMethod(AMX *amx, cell *params, AmxxForward forward_id, const ArgList *args, int8_t start_param)
 	{
-		Manager::Instance()->PushThis(this_hash);
-
 		int num_args = (args == nullptr) ? 0 : args->length();
 
 		AssemblyCreate assembly;
@@ -167,8 +164,20 @@ namespace util
 				MF_SetAmxString(amx, params[e.index], e.str.get(), strlen(e.str.get()));
 		}
 
-		Manager::Instance()->PopThis();
+		return ret;
+	}
 
+	cell ExecuteMethodHookChain(AMX *amx, cell *params, const HookChain *hook_chain, const ArgList *args, int8_t start_param)
+	{
+		int ret = OO_CONTINUE;
+		for (size_t i = 0; i < hook_chain->length(); i++)
+		{
+			int r = ExecuteMethod(amx, params, hook_chain->at(i), args, start_param);
+			if (r == OO_BREAK)
+				return r;
+			
+			ret = (r > ret) ? r : ret;
+		}
 		return ret;
 	}
 }}

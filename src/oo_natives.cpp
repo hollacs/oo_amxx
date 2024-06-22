@@ -8,6 +8,9 @@
 namespace oo {
 namespace native
 {
+	// umm... is there a better way to do this?
+	cell g_ret = 0;
+	bool g_ret_set = false;
 
 	cell AMX_NATIVE_CALL native_class(AMX *amx, cell *params)
 	{
@@ -211,6 +214,45 @@ namespace native
 		return 1;
 	}
 
+	cell AMX_NATIVE_CALL native_hook_mthd(AMX *amx, cell *params)
+	{
+		const char *_class = MF_GetAmxString(amx, params[1], 0, nullptr);
+		const char *_name = MF_GetAmxString(amx, params[2], 1, nullptr);
+
+		Class *pclass = Manager::Instance()->ToClass(_class);
+		if (pclass == nullptr)
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "%s@%s(...): Class not found", _class, _name);
+			return 0;
+		}
+
+		auto r = pclass->methods.find(_name);
+		if (!r.found())
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "%s@%s(...): Method not found", _class, _name);
+			return 0;
+		}
+
+		const char *_public = MF_GetAmxString(amx, params[3], 2, nullptr);
+		Method *mthd = &r->value;
+		ke::Vector<AmxxForward> *fwds;
+
+		if (!params[4])
+			fwds = &mthd->pre;
+		else
+			fwds = &mthd->post;
+
+		AmxxForward fwd_id = util::AddMethod(amx, _public, &mthd->args);
+		if (fwd_id <= NO_FORWARD)
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "%s(...): Public not found", _public);
+			return 0;
+		}
+
+		fwds->append(fwd_id);
+		return 1;
+	}
+
 	cell AMX_NATIVE_CALL native_isa(AMX *amx, cell *params)
 	{
 		ObjectHash _this = params[1];
@@ -290,7 +332,9 @@ namespace native
 		}
 		else
 		{
-			util::ExecuteMethod(amx, params, result->forward_index, hash, &result->args, 2);
+			Manager::Instance()->PushThis(hash);
+			util::ExecuteMethod(amx, params, result->forward_index, &result->args, 2);
+			Manager::Instance()->PopThis();
 		}
 
 		return hash;
@@ -312,7 +356,9 @@ namespace native
 			auto &&dtor = pobj->isa->mro.at(i)->dtor;
 			if (dtor.forward_index > NO_FORWARD)
 			{
-				util::ExecuteMethod(amx, params, dtor.forward_index, _this);
+				Manager::Instance()->PushThis(_this);
+				util::ExecuteMethod(amx, params, dtor.forward_index);
+				Manager::Instance()->PopThis();
 			}
 		}
 		
@@ -401,8 +447,31 @@ namespace native
 			return 0;
 		}
 
-		cell ret = util::ExecuteMethod(amx, params, result->forward_index, _this, &result->args, 3);
+		cell ret = 0;
+
+		g_ret = 0;
+		g_ret_set = false;
+
+		Manager::Instance()->PushThis(_this);
+		if (util::ExecuteMethodHookChain(amx, params, &result->pre, &result->args, 3) < OO_SUPERCEDE)
+		{
+			ret = util::ExecuteMethod(amx, params, result->forward_index, &result->args, 3);
+			util::ExecuteMethodHookChain(amx, params, &result->post, &result->args, 3);
+		}
+		else
+		{
+			ret = g_ret;
+		}
+		Manager::Instance()->PopThis();
+
 		return ret;
+	}
+
+	cell AMX_NATIVE_CALL native_hook_set_return(AMX *amx, cell *params)
+	{
+		g_ret = params[1];
+		g_ret_set = true;
+		return 0;
 	}
 
 	cell AMX_NATIVE_CALL native_get(AMX *amx, cell *params)
@@ -637,7 +706,9 @@ namespace native
 		}
 		else
 		{
-			util::ExecuteMethod(amx, params, result->forward_index, this_hash, &result->args, 2);
+			Manager::Instance()->PushThis(this_hash);
+			util::ExecuteMethod(amx, params, result->forward_index, &result->args, 2);
+			Manager::Instance()->PopThis();
 		}
 
 		return 1;

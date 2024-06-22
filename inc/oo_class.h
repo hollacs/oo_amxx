@@ -12,6 +12,7 @@ namespace oo
 {
 	using AmxxForward 	= int;
 	using ArgList 		= ke::Vector<int8_t>;
+	using HookChain		= ke::Vector<AmxxForward>;
 	KE_CONSTEXPR AmxxForward NO_FORWARD = -1;
 
 	struct Ctor
@@ -30,6 +31,9 @@ namespace oo
 		AmxxForward forward_index;
 		ArgList 	args;
 		bool 		is_static;
+
+		HookChain pre;
+		HookChain post;
 	};
 
 	struct Class

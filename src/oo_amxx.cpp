@@ -14,6 +14,9 @@ void OnAmxxAttach(void)
 		{ "oo_smthd",	oo::native::native_smthd },
 		{ "oo_var",		oo::native::native_var },
 
+		{ "oo_hook_mthd", oo::native::native_hook_mthd },
+		{ "oo_hook_set_return", oo::native::native_hook_set_return },
+
 		{ "oo_isa",			oo::native::native_isa },
 		{ "oo_subclass_of",	oo::native::native_subclass_of	},
 
@@ -46,7 +49,7 @@ void OnPluginsLoaded(void)
 			ForwardExecType::ET_IGNORE,
 			ForwardParam::FP_DONE)
 	);
-
+	/*
 	MF_PrintSrvConsole("[%s] Classes and their methods and variables:\n", MODULE_LOGTAG);
 	for (auto iter = oo::Manager::Instance()->GetClasses().iter(); !iter.empty(); iter.next())
 	{
@@ -103,7 +106,7 @@ void OnPluginsLoaded(void)
 			auto v = iter;
 			MF_PrintSrvConsole("              %s@%s[%d]\n", cl->key.chars(), v->key.chars(), v->value);
 		}
-	}
+	}*/
 }
 
 void OnPluginsUnloaded()
