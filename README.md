@@ -4,3 +4,5 @@ Idea drafted with BB.O.<br>
 Author: BB.O. & holla
 
 Credits: okapi module for assembly code
+
+please use [no-std branch](https://github.com/hollacs/oo_amxx/tree/no-std)
