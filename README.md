@@ -3,9 +3,32 @@ Object-Oriented Simulation for AMXXPawn<br>
 Idea drafted with BB.O.<br>
 Author: BB.O. & holla
 
-Credits: OKAPI module for using variable arguments in MF_ExecuteForward() and MF_RegisterSpForward()
+Reference: [OKAPI module](https://github.com/Arkshine/Okapi/tree/master) for using variable arguments in MF_ExecuteForward() and MF_RegisterSpForward()
 
-Example:
+To build this project, you need to install [ambuild](https://wiki.alliedmods.net/AMBuild)
+
+
+The first time you are building, you must configure the build. First create a build folder, and then run configure.py. For example: 
+```
+mkdir build
+cd build
+python ../configure.py
+```
+
+You can add following parameter to configure with debug or optimize mode
+```
+--enable-debug
+--enable-optimize
+```
+
+Build with following command:
+```
+ambuild
+```
+
+---
+
+Usage:
 ```sourcepawn
 #include <amxmodx>
 #include <oo>
@@ -279,6 +302,7 @@ Object #461123433 DOES NOT EXIST
 
 ## Multiple Inheritance
 For the version of 1.1.0, now support multiple inheritance! \
+It's based on python's method resolution order (MRO) \
 Example:
 ```sourcepawn
 #include <amxmodx>
@@ -355,3 +379,10 @@ B1@Print()
 B2@Print()
 D@Print(hp=100, a=689, b=777)
 ```
+
+---
+
+Known issues: (not possible to be fixed)
+- You cannot use default parameter in methods or constructors
+- You cannot use multi-dimensional array in member variables
+- OO_STRING_REF type in method/constructor max length is 255 (but OO_STRING is not affected)
