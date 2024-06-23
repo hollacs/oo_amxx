@@ -28,7 +28,7 @@ ambuild
 
 ---
 
-Example:
+Usage:
 ```sourcepawn
 #include <amxmodx>
 #include <oo>
