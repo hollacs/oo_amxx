@@ -31,40 +31,30 @@
 #define OO_VERSION_NUM	110
 stock const OO_VERSION_STR[] = "1.1.0";
 
-#define @null 				any:0 // null object
-#define @this 				oo_this() // this object
-#define @increment(%0[%1]) 	oo_set(%0, oo_get(%0, %1) + 1)
-#define @decrement(%0[%1]) 	oo_set(%0, oo_get(%0, %1) - 1)
+#define @null 					any:0 // null object
+#define @this 					oo_this() // this object
+#define @increment(%0[%1]) 		oo_set(%0, oo_get(%0, %1) + 1)
+#define @decrement(%0[%1]) 		oo_set(%0, oo_get(%0, %1) - 1)
 
 #define OO_CELL			(1)		// cell
 #define OO_FLOAT		(1)		// float
 #define OO_OBJECT		(1)		// object
 #define OO_BYREF		(0) 	// cell or float by reference
 #define OO_STRING		(-1) 	// const string[]
-#define OO_STRING_EX 	(-2) 	// string[]
+#define OO_STRING_REF 	(-2) 	// string[]
 #define OO_VEC2			(2)		// 2d vector (not necessary)
 #define OO_VEC3			(3)		// 3d vector (not necessary)
 #define OO_ARRAY[%0]	(%0)	// array[size]
 
-#define @cell 			OO_CELL
-#define @float 			OO_FLOAT
-#define @byref 			OO_BYREF
-#define @string 		OO_STRING
-#define @stringex		OO_STRING_EX
-#define @vec2			OO_VEC2
-#define @vec3			OO_VEC3
-#define @array[%0]		OO_ARRAY[%0]
-#define @object 		OO_OBJECT
-
-#define @int(%0) 		@cell
-#define @bool(%0)		@cell
-#define @fl(%0)			@float
-#define @ref(%0)		@byref
-#define @str(%0)		@string
-#define @stref(%0)		@stringex
-#define @vec(%0[%1])	@array[%1]
-#define @arr(%0[%1])	@array[%1]
-#define @obj(%0)		@object
+#define @int(%0) 		OO_CELL
+#define @bool(%0)		OO_CELL
+#define @fl(%0)			OO_FLOAT
+#define @ref(%0)		OO_BYREF
+#define @str(%0)		OO_STRING
+#define @stref(%0)		OO_STRING_REF
+#define @vec(%0[%1])	OO_ARRAY[%1]
+#define @arr(%0[%1])	OO_ARRAY[%1]
+#define @obj(%0)		OO_OBJECT
 
 // Get the value of the string-type variable from an object.
 // oo_get_str(object, const name[], output_str[], len)
@@ -93,6 +83,24 @@ stock const OO_VERSION_STR[] = "1.1.0";
 //   oo_set(this, "items", array);
 #define oo_set_arr(%0,%1,%2)		oo_set(%0, %1, 0, 0, %2, 0, 0)
 
+// new macro
+#define @range(%0..%1,%2[%3..%4]) 	%0, %1, %2, %3, %4
+#define @array(%0,%1)				0, 0, %0, 0, %1
+#define @string(%0,%1)				@array(%0, %1)
+#define @len(%0)					sizeof %0
+
+// oo_set(this, "items", @range(0..2, items[0..2]))
+// oo_set(this, "items", @array(items, 0))
+// oo_set(this, "items", @string("fuck", 0))
+// oo_get(this, "class", @string(name, @len(name)))
+
+enum
+{
+	OO_CONTINUE = 0,
+	OO_SUPERCEDE,
+	OO_BREAK
+};
+
 forward oo_init();
 
 /* Declare a class:
@@ -100,6 +108,9 @@ forward oo_init();
  *	
  * Declare a subclass (inherited from "Animal"):
  *   oo_class("Monkey", "Animal");
+ *	
+ * Multiple inheritance
+ *   oo_class("Base", "A", "B");
  */
 native oo_class(const class[], any:...);
 
@@ -119,7 +130,7 @@ native oo_ctor(const class[], const name[], any:...);
 /* Declare a destructor of a class
  *   oo_dtor("Animal", "Dtor")
  *
- * Just like the constructor, declare a public function as follows:
+ * Afterwards, you will need to declare a public function as follows:
  *   public Animal@Dtor() {}
  */
 native oo_dtor(const class[], const name[]);
@@ -132,7 +143,7 @@ native oo_dtor(const class[], const name[]);
  * With parameters:
  *   oo_ctor("Animal", "Eat", @str{food_name}, @int{amount});
  *
- * Again, declare a public function as follows:
+ * Afterwards, you will need to declare a public function as follows:
  *   public Animal@Eat(const food_name[], amount) {}
  */
 native oo_mthd(const class[], const name[], any:...);
@@ -200,7 +211,7 @@ native oo_delete(any:this);
  * So, call a method like this:
  *   oo_call(this, "Eat", "apple", 2);
  *
- * For calling a parent method: ("Animal" was the parent class)
+ * For calling a parent method: ("Animal" is the parent class)
  *   oo_call(this, "Animal@Eat", "orange", 1);
  */
 native oo_call(any:this, const name[], any: ...);
@@ -221,10 +232,10 @@ native oo_call(any:this, const name[], any: ...);
  *   new hp = oo_get(this, "Base@health");
  * 
  * Get the values within a specific range of indexes from an array.
- *   new arr[5];
- *   oo_get(this, "test_array", 5, 11, arr, 0, 5);
+ *   new arr[5] = {1, 2, 3, 4, 5};
+ *   oo_set(this, "test_array", 4, 9, arr, 1, 5);
  *
- * The above code retrieves values from the test_array[] (index 5 to 10) and outputs them to the arr[] (index 0 to 4).
+ * The above code retrieves values from the test_array[] (index 4 to 8) and outputs them to the arr[] (index 1 to 4)
  * For the simple version, please use the marco `oo_get_arr` and `oo_get_str`.
  */
 native oo_get(any:this, const name[], any: ...);
@@ -246,9 +257,10 @@ native oo_get(any:this, const name[], any: ...);
  * 
  * Set the values within a specific range of indexes to an array.
  *   new arr[5] = {1, 2, 3, 4, 5};
- *   oo_set(this, "test_array", 5, 11, arr, 0, 4);
+ *   oo_set(this, "test_array", 4, 9, arr, 1, 5);
  *
- * The above code set values from the arr[] (index 0 to 4) to the test_array[] (index 5 to 10);
+ * The above code set values from the arr[] (index 1 to 4) to the test_array[] (index 4 to 8);
+ * result: test_array[] = {0, 0, 0, 0, 2, 3, 4, 5, ...}
  * For the simple version, please use the marco `oo_set_arr` and `oo_set_str`.
  */
 native oo_set(any:this, const name[], any: ...);
@@ -260,3 +272,11 @@ native any:oo_this();
  *   oo_super_ctor("Animal")
  */
 native oo_super_ctor(const _super[], any: ...);
+
+native oo_hook_mthd(const class[], const mthd_name[], const public_name[], post=0);
+
+native oo_hook_ctor(const class[], const ctor_name[], const public_name[], post=0);
+
+native oo_hook_dtor(const class[], const public_name[], post=0);
+
+native oo_hook_set_return(value);
