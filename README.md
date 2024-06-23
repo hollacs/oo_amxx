@@ -7,6 +7,8 @@ Reference: [OKAPI module](https://github.com/Arkshine/Okapi/tree/master) for usi
 
 To build this project, you need to install [ambuild](https://wiki.alliedmods.net/AMBuild)
 
+
+The first time you are building, you must configure the build. First create a build folder, and then run configure.py. For example: 
 ```
 mkdir build
 cd build
