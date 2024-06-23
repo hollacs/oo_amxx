@@ -3,7 +3,27 @@ Object-Oriented Simulation for AMXXPawn<br>
 Idea drafted with BB.O.<br>
 Author: BB.O. & holla
 
-Credits: OKAPI module for using variable arguments in MF_ExecuteForward() and MF_RegisterSpForward()
+Reference: [OKAPI module](https://github.com/Arkshine/Okapi/tree/master) for using variable arguments in MF_ExecuteForward() and MF_RegisterSpForward()
+
+To build this project, you need to install [ambuild](https://wiki.alliedmods.net/AMBuild)
+
+```
+cd build
+python ../configure.py
+```
+
+You can add following parameter to configure with debug or optimize mode
+```
+--enable-debug
+--enable-optimize
+```
+
+Build with following command:
+```
+ambuild
+```
+
+---
 
 Example:
 ```sourcepawn
