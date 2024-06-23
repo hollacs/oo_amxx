@@ -307,6 +307,12 @@ namespace native
 		const char *_public = MF_GetAmxString(amx, params[2], 2, nullptr);
 
 		Dtor *dtor = &pclass->dtor;
+		if (dtor->forward_index <= NO_FORWARD)
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "%s(...): No dtor in this class", _class);
+			return 0;
+		}
+
 		ke::Vector<AmxxForward> *fwds;
 
 		if (!params[4])
@@ -433,7 +439,7 @@ namespace native
 			if (dtor.forward_index > NO_FORWARD)
 			{
 				Manager::Instance()->PushThis(_this);
-				if (util::ExecuteMethodHookChain(amx, params, &dtor.pre))
+				if (util::ExecuteMethodHookChain(amx, params, &dtor.pre) < OO_SUPERCEDE)
 				{
 					util::ExecuteMethod(amx, params, dtor.forward_index);
 					util::ExecuteMethodHookChain(amx, params, &dtor.post);
