@@ -15,6 +15,8 @@ void OnAmxxAttach(void)
 		{ "oo_var",		oo::native::native_var },
 
 		{ "oo_hook_mthd", oo::native::native_hook_mthd },
+		{ "oo_hook_ctor", oo::native::native_hook_ctor },
+		{ "oo_hook_dtor", oo::native::native_hook_dtor },
 		{ "oo_hook_set_return", oo::native::native_hook_set_return },
 
 		{ "oo_isa",			oo::native::native_isa },

@@ -19,11 +19,17 @@ namespace oo
 	{
 		AmxxForward forward_index;
 		ArgList 	args;
+
+		HookChain pre;
+		HookChain post;
 	};
 
 	struct Dtor
 	{
 		AmxxForward forward_index;
+
+		HookChain pre;
+		HookChain post;
 	};
 
 	struct Method
@@ -47,6 +53,7 @@ namespace oo
 		ke::HashMap<uint32_t, Ctor, IntegerPolicy> ctors;
 		ke::HashMap<ke::AString, int8_t, StringPolicy> vars;
 		ke::HashMap<ke::AString, Method, StringPolicy> methods;
+		ke::HashMap<ke::AString, Ctor*, StringPolicy> ctor_map;
 
 		ke::Vector<Class *> mro;
 
@@ -90,14 +97,19 @@ namespace oo
 			ctors.init();
 			vars.init();
 			methods.init();
+			ctor_map.init();
 		}
 
-		void AddCtor(Ctor ctor)
+		void AddCtor(Ctor ctor, const char *name)
 		{
 			size_t size = ctor.args.length();
 			auto in = this->ctors.findForAdd(size);
 			if (!in.found())
 				this->ctors.add(in, size, ke::Move(ctor));
+
+			auto in2 = this->ctor_map.findForAdd(name);
+			if (!in2.found())
+				this->ctor_map.add(in2, ke::AString(name), &in->value);
 		}
 
 		void AssignDtor(Dtor dtor)

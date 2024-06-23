@@ -85,7 +85,7 @@ namespace native
 			}
 		}
 
-		pclass->AddCtor(ke::Move(ctor));
+		pclass->AddCtor(ke::Move(ctor), _name);
 		return 1;
 	}
 
@@ -253,6 +253,78 @@ namespace native
 		return 1;
 	}
 
+	cell AMX_NATIVE_CALL native_hook_ctor(AMX *amx, cell *params)
+	{
+		const char *_class = MF_GetAmxString(amx, params[1], 0, nullptr);
+		const char *_name = MF_GetAmxString(amx, params[2], 1, nullptr);
+
+		Class *pclass = Manager::Instance()->ToClass(_class);
+		if (pclass == nullptr)
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "%s@%s(...): Class not found", _class, _name);
+			return 0;
+		}
+
+		auto r = pclass->ctor_map.find(_name);
+		if (!r.found())
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "%s@%s(...): Ctor not found", _class, _name);
+			return 0;
+		}
+
+		const char *_public = MF_GetAmxString(amx, params[3], 2, nullptr);
+
+		Ctor *ctor = r->value;
+		ke::Vector<AmxxForward> *fwds;
+
+		if (!params[4])
+			fwds = &ctor->pre;
+		else
+			fwds = &ctor->post;
+
+		AmxxForward fwd_id = util::AddMethod(amx, _public, &ctor->args);
+		if (fwd_id <= NO_FORWARD)
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "%s(...): Public not found", _public);
+			return 0;
+		}
+
+		fwds->append(fwd_id);
+		return 1;
+	}
+
+	cell AMX_NATIVE_CALL native_hook_dtor(AMX *amx, cell *params)
+	{
+		const char *_class = MF_GetAmxString(amx, params[1], 0, nullptr);
+
+		Class *pclass = Manager::Instance()->ToClass(_class);
+		if (pclass == nullptr)
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "%s(...): Class not found", _class);
+			return 0;
+		}
+
+		const char *_public = MF_GetAmxString(amx, params[2], 2, nullptr);
+
+		Dtor *dtor = &pclass->dtor;
+		ke::Vector<AmxxForward> *fwds;
+
+		if (!params[4])
+			fwds = &dtor->pre;
+		else
+			fwds = &dtor->post;
+
+		AmxxForward fwd_id = util::AddMethod(amx, _public);
+		if (fwd_id <= NO_FORWARD)
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "%s(...): Public not found", _public);
+			return 0;
+		}
+
+		fwds->append(fwd_id);
+		return 1;
+	}
+
 	cell AMX_NATIVE_CALL native_isa(AMX *amx, cell *params)
 	{
 		ObjectHash _this = params[1];
@@ -333,7 +405,11 @@ namespace native
 		else
 		{
 			Manager::Instance()->PushThis(hash);
-			util::ExecuteMethod(amx, params, result->forward_index, &result->args, 2);
+			if (util::ExecuteMethodHookChain(amx, params, &result->pre, &result->args, 2) < OO_SUPERCEDE)
+			{
+				util::ExecuteMethod(amx, params, result->forward_index, &result->args, 2);
+				util::ExecuteMethodHookChain(amx, params, &result->post, &result->args, 2);
+			}
 			Manager::Instance()->PopThis();
 		}
 
@@ -357,7 +433,11 @@ namespace native
 			if (dtor.forward_index > NO_FORWARD)
 			{
 				Manager::Instance()->PushThis(_this);
-				util::ExecuteMethod(amx, params, dtor.forward_index);
+				if (util::ExecuteMethodHookChain(amx, params, &dtor.pre))
+				{
+					util::ExecuteMethod(amx, params, dtor.forward_index);
+					util::ExecuteMethodHookChain(amx, params, &dtor.post);
+				}
 				Manager::Instance()->PopThis();
 			}
 		}
@@ -707,7 +787,11 @@ namespace native
 		else
 		{
 			Manager::Instance()->PushThis(this_hash);
-			util::ExecuteMethod(amx, params, result->forward_index, &result->args, 2);
+			if (util::ExecuteMethodHookChain(amx, params, &result->pre, &result->args, 2) < OO_SUPERCEDE)
+			{
+				util::ExecuteMethod(amx, params, result->forward_index, &result->args, 2);
+				util::ExecuteMethodHookChain(amx, params, &result->post, &result->args, 2);
+			}
 			Manager::Instance()->PopThis();
 		}
 

@@ -18,6 +18,10 @@ namespace native
 
 	cell AMX_NATIVE_CALL native_hook_mthd(AMX *amx, cell *params);
 
+	cell AMX_NATIVE_CALL native_hook_ctor(AMX *amx, cell *params);
+
+	cell AMX_NATIVE_CALL native_hook_dtor(AMX *amx, cell *params);
+
 	cell AMX_NATIVE_CALL native_hook_set_return(AMX *amx, cell *params);
 
 	cell AMX_NATIVE_CALL native_var(AMX *amx, cell *params);
