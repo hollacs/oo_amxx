@@ -279,6 +279,7 @@ Object #461123433 DOES NOT EXIST
 
 ## Multiple Inheritance
 For the version of 1.1.0, now support multiple inheritance! \
+It's based on python's method resolution order (MRO) \
 Example:
 ```sourcepawn
 #include <amxmodx>
