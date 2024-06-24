@@ -176,5 +176,4 @@ namespace oo
 	};
 }
 
-
 #endif
