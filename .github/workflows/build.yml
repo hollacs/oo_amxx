@@ -23,11 +23,6 @@ jobs:
           git clone https://github.com/alliedmodders/ambuild
           cd ambuild
           python setup.py install
-          cd ..
-
-      - name: Clone oo_amxx
-        run: |
-          git clone https://github.com/hollacs/oo_amxx
 
       - name: Set up MSVC++ environment
         uses: ilammy/msvc-dev-cmd@v1
@@ -36,9 +31,14 @@ jobs:
 
       - name: Build project
         run: |
-          cd oo_amxx
           mkdir build
           cd build
           python ../configure.py --enable-optimize
           ambuild
 
+      - name: Upload an entire directory
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-build/win32/
+          path: build/oo_amxx/oo_amxx.dll
+          overwrite: true
