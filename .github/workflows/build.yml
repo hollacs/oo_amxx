@@ -6,7 +6,7 @@ on:
       - no-std  # Adjust this to your main branch name
 
 jobs:
-  build-win32:
+  windows-job:
     runs-on: windows-latest
 
     steps:
@@ -42,7 +42,7 @@ jobs:
           name: build-win32
           path: build/oo_amxx/oo_amxx.dll
 
-  build-linux:
+  linux-job:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
