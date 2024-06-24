@@ -68,4 +68,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: build-linux
-          path: build/oo_amxx/oo_amxx_i386.so
+          path: build/oo_amxx_i386/oo_amxx_i386.so
