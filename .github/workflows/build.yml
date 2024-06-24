@@ -1,0 +1,42 @@
+name: Build on Push
+
+on:
+  push:
+    branches:
+      - no-std  # Adjust this to your main branch name
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python 3
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'  # Specify the desired Python version
+
+      - name: Set up AMBuilder
+        run: |
+          git clone https://github.com/alliedmodders/ambuild
+          cd ambuild
+          python setup.py install
+          cd ..
+
+      - name: Clone oo_amxx
+        run: |
+          git clone https://github.com/hollacs/oo_amxx
+
+      - name: Set up MSVC++ environment
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Build project
+        run: |
+          cd oo_amxx
+          mkdir build
+          cd build
+          python ../configure.py --enable-optimize
+          ambuild
+
