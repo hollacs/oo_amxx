@@ -6,7 +6,7 @@ on:
       - no-std  # Adjust this to your main branch name
 
 jobs:
-  build:
+  build-win32:
     runs-on: windows-latest
 
     steps:
@@ -36,8 +36,33 @@ jobs:
           python ../configure.py --enable-optimize
           ambuild
 
-      - name: Upload an entire directory
+      - name: Upload binary
         uses: actions/upload-artifact@v3
         with:
           name: build-win32
           path: build/oo_amxx/oo_amxx.dll
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up AMBuilder
+        run: |
+          git clone https://github.com/alliedmodders/ambuild
+          cd ambuild
+          python setup.py install
+
+      - name: Build project
+        run: |
+          mkdir build
+          cd build
+          python ../configure.py --enable-optimize
+          ambuild
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-linux
+          path: build/oo_amxx/oo_amxx_i386.so
