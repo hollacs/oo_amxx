@@ -50,7 +50,7 @@ jobs:
 
       - name: Install 32-bit headers
         run: |
-          sudo apt-get install gcc-multilib
+          sudo apt-get install gcc-multilib g++-multilib
 
       - name: Set up AMBuilder
         run: |
