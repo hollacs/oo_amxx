@@ -18,6 +18,7 @@ void OnAmxxAttach(void)
 		{ "oo_hook_ctor", oo::native::native_hook_ctor },
 		{ "oo_hook_dtor", oo::native::native_hook_dtor },
 		{ "oo_hook_set_return", oo::native::native_hook_set_return },
+		{ "oo_hook_get_return", oo::native::native_hook_get_return },
 
 		{ "oo_isa",			oo::native::native_isa },
 		{ "oo_subclass_of",	oo::native::native_subclass_of	},

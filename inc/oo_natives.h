@@ -24,6 +24,8 @@ namespace native
 
 	cell AMX_NATIVE_CALL native_hook_set_return(AMX *amx, cell *params);
 
+	cell AMX_NATIVE_CALL native_hook_get_return(AMX *amx, cell *params);
+
 	cell AMX_NATIVE_CALL native_var(AMX *amx, cell *params);
 
 	cell AMX_NATIVE_CALL native_isa(AMX *amx, cell *params);

@@ -560,6 +560,11 @@ namespace native
 		return 0;
 	}
 
+	cell AMX_NATIVE_CALL native_hook_get_return(AMX *amx, cell *params)
+	{
+		return g_ret;
+	}
+
 	cell AMX_NATIVE_CALL native_get(AMX *amx, cell *params)
 	{
 		ObjectHash _this = params[1];
