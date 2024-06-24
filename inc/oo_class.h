@@ -17,29 +17,29 @@ namespace oo
 
 	struct Ctor
 	{
-		AmxxForward forward_index;
+		AmxxForward forward_index = NO_FORWARD;
 		ArgList 	args;
 
-		HookChain pre;
-		HookChain post;
+		HookChain 	pre;
+		HookChain 	post;
 	};
 
 	struct Dtor
 	{
-		AmxxForward forward_index;
+		AmxxForward forward_index = NO_FORWARD;
 
-		HookChain pre;
-		HookChain post;
+		HookChain 	pre;
+		HookChain 	post;
 	};
 
 	struct Method
 	{
-		AmxxForward forward_index;
+		AmxxForward forward_index = NO_FORWARD;
 		ArgList 	args;
-		bool 		is_static;
+		bool 		is_static = false;
 
-		HookChain pre;
-		HookChain post;
+		HookChain 	pre;
+		HookChain 	post;
 	};
 
 	struct Class
@@ -47,29 +47,28 @@ namespace oo
 		int32_t 	version;
 		ke::AString name;
 		int32_t 	instance_size;
-		Dtor dtor;
+		Dtor 		dtor;
 
-		ke::Vector<Class *> super_classes;
-		ke::HashMap<uint32_t, Ctor, IntegerPolicy> ctors;
-		ke::HashMap<ke::AString, int8_t, StringPolicy> vars;
-		ke::HashMap<ke::AString, Method, StringPolicy> methods;
-		ke::HashMap<ke::AString, Ctor*, StringPolicy> ctor_map;
-
-		ke::Vector<Class *> mro;
+		ke::Vector<Class *> 							super_classes;
+		ke::HashMap<uint32_t, Ctor, IntegerPolicy> 		ctors;
+		ke::HashMap<ke::AString, Ctor *, StringPolicy> 	ctor_map;
+		ke::HashMap<ke::AString, int8_t, StringPolicy> 	vars;
+		ke::HashMap<ke::AString, Method, StringPolicy> 	methods;
+		ke::Vector<Class *> 							mro;
 
 		Class() 
-			: version(0), name(""), instance_size(0), dtor({NO_FORWARD})
+			: version(0), name(""), instance_size(0)
 		{
 			Init();
 		}
 
-		Class(int32_t version, const char *name) : version(version), name(name), instance_size(0), dtor({NO_FORWARD})
+		Class(int32_t version, const char *name) : version(version), name(name), instance_size(0)
 		{
 			Init();
 		}
 
 		Class(int32_t version, const char *name, ke::Vector<Class *> *supers)
-			: version(version), name(name), dtor({NO_FORWARD})
+			: version(version), name(name)
 		{
 			if (supers != nullptr)
 			{
@@ -87,7 +86,7 @@ namespace oo
 		}
 
 		Class(int32_t version)
-			: version(version), name(""), instance_size(0), dtor({NO_FORWARD})
+			: version(version), name(""), instance_size(0)
 		{
 			Init();
 		}
