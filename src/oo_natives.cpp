@@ -23,7 +23,7 @@ namespace native
 			return 0;
 		}
 
-		uint8_t num_args = params[0] / sizeof(cell) - 1;
+		auto num_args = params[0] / sizeof(cell) - 1;
 		if (num_args == 0)
 		{
 			auto c = Manager::Instance()->NewClass(_class, OO_VERSION, nullptr);
@@ -33,7 +33,7 @@ namespace native
 
 		ke::Vector<Class *> supers;
 
-		for (uint8_t i = 1u; i <= num_args; i++)
+		for (auto i = 1u; i <= num_args; i++)
 		{
 			const char *_base = MF_GetAmxString(amx, params[i + 1], 1, nullptr);
 			Class *super = Manager::Instance()->ToClass(_base);
@@ -68,9 +68,9 @@ namespace native
 
 		Ctor ctor;
 		{
-			uint8_t num_args = params[0] / sizeof(cell) - 2;
+			auto num_args = params[0] / sizeof(cell) - 2;
 
-			for (uint8_t i = 1u; i <= num_args; i++)
+			for (auto i = 1u; i <= num_args; i++)
 			{
 				int8_t size = (*MF_GetAmxAddr(amx, params[i + 2]));
 				ctor.args.append(size);
@@ -136,9 +136,9 @@ namespace native
 
 		Method mthd;
 		{
-			uint8_t num_args = params[0] / sizeof(cell) - 2;
+			auto num_args = params[0] / sizeof(cell) - 2;
 
-			for (uint8_t i = 1u; i <= num_args; i++)
+			for (auto i = 1u; i <= num_args; i++)
 			{
 				int8_t size = (*MF_GetAmxAddr(amx, params[i + 2]));
 				mthd.args.append(size);
@@ -175,9 +175,9 @@ namespace native
 
 		Method mthd;
 		{
-			uint8_t num_args = params[0] / sizeof(cell) - 2;
+			auto num_args = params[0] / sizeof(cell) - 2;
 
-			for (uint8_t i = 1u; i <= num_args; i++)
+			for (auto i = 1u; i <= num_args; i++)
 			{
 				int8_t size = (*MF_GetAmxAddr(amx, params[i + 2]));
 				mthd.args.append(size);
@@ -397,7 +397,7 @@ namespace native
 		ObjectHash hash = Manager::Instance()->NewObject(pclass);
 
 		auto &&class_name = pclass->name;
-		uint8_t num_args = params[0] / sizeof(cell) - 1;
+		auto num_args = params[0] / sizeof(cell) - 1;
 
 		auto result = Manager::Instance()->FindCtor(pclass, num_args);
 		if (result == nullptr)
@@ -520,7 +520,7 @@ namespace native
 			return 0;
 		}
 
-		uint8_t num_args = params[0] / sizeof(cell) - 2;
+		auto num_args = params[0] / sizeof(cell) - 2;
 		if (num_args != result->args.length())
 		{
 			MF_LogError(amx, AMX_ERR_NATIVE, "Call of %s@%s: #args doesn't match (expected: %d, now: %d)", pisa->name.chars(), _name.chars(), result->args.length(), num_args);
@@ -582,7 +582,7 @@ namespace native
 			return 0;
 		}
 
-		uint8_t num_args = params[0] / sizeof(cell) - 2;
+		auto num_args = params[0] / sizeof(cell) - 2;
 		auto var_size = var->length();
 
 		if (num_args == 0)
@@ -613,16 +613,16 @@ namespace native
 					return 0;
 				}
 
-				size_t from_begin	= *MF_GetAmxAddr(amx, params[3]);
-				size_t from_end		= *MF_GetAmxAddr(amx, params[4]);
-				size_t from_diff	= (from_end == 0) ? var_size : from_end - from_begin;
+				int from_begin	= *MF_GetAmxAddr(amx, params[3]);
+				int from_end	= *MF_GetAmxAddr(amx, params[4]);
+				int from_diff	= (from_end == 0) ? var_size : from_end - from_begin;
 
-				size_t to_begin		= *MF_GetAmxAddr(amx, params[6]);
-				size_t to_end		= *MF_GetAmxAddr(amx, params[7]);
-				size_t to_diff		= (to_end == 0) ? var_size : to_end - to_begin;
+				int to_begin		= *MF_GetAmxAddr(amx, params[6]);
+				int to_end		= *MF_GetAmxAddr(amx, params[7]);
+				int to_diff		= (to_end == 0) ? var_size : to_end - to_begin;
 
-				size_t cell_count = util::clamp(from_diff, size_t(0), to_diff);
-				cell_count = (cell_count < var_size) ? cell_count : var_size;
+				int cell_count = util::clamp(from_diff, 0, to_diff);
+				cell_count = (cell_count < (int)var_size) ? cell_count : var_size;
 
 				MF_CopyAmxMemory(MF_GetAmxAddr(amx, params[5]) + to_begin, &(*var)[from_begin], cell_count);
 				return (*var)[0];
@@ -654,7 +654,7 @@ namespace native
 			return 0;
 		}
 
-		uint8_t num_args = params[0] / sizeof(cell) - 2;
+		auto num_args = params[0] / sizeof(cell) - 2;
 		auto &&var_size = var->length();
 
 		if (var_size == 1)
@@ -678,18 +678,18 @@ namespace native
 				return 0;
 			}
 
-			size_t to_begin		= *MF_GetAmxAddr(amx, params[3]);
-			size_t to_end		= *MF_GetAmxAddr(amx, params[4]);
-			size_t to_diff		= (to_end == 0) ? var_size : to_end - to_begin;
+			int to_begin	= *MF_GetAmxAddr(amx, params[3]);
+			int to_end		= *MF_GetAmxAddr(amx, params[4]);
+			int to_diff		= (to_end == 0) ? var_size : to_end - to_begin;
 
-			size_t from_begin	= *MF_GetAmxAddr(amx, params[6]);
-			size_t from_end		= *MF_GetAmxAddr(amx, params[7]);
-			size_t from_diff	= (from_end == 0) ? var_size : from_end - from_begin;
+			int from_begin	= *MF_GetAmxAddr(amx, params[6]);
+			int from_end	= *MF_GetAmxAddr(amx, params[7]);
+			int from_diff	= (from_end == 0) ? var_size : from_end - from_begin;
 
-			size_t cell_count	= util::clamp(from_diff, 0u, to_diff);
-			cell_count = (cell_count < var_size) ? cell_count : var_size;
+			int cell_count	= util::clamp(from_diff, 0, to_diff);
+			cell_count = (cell_count < (int)var_size) ? cell_count : var_size;
 
-			for (std::size_t i = 0; i < cell_count; i++)
+			for (int i = 0; i < cell_count; i++)
 				(*var)[to_begin + i] = *(MF_GetAmxAddr(amx, params[5]) + from_begin + i);
 
 			return (*var)[0];
@@ -775,7 +775,7 @@ namespace native
 			return 0;
 		}
 
-		uint8_t num_args = params[0] / sizeof(cell) - 1;
+		auto num_args = params[0] / sizeof(cell) - 1;
 
 		auto result = Manager::Instance()->FindCtor(psuper, num_args);
 		auto&& forward_index = result->forward_index;

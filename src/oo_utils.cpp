@@ -180,4 +180,9 @@ namespace util
 		}
 		return ret;
 	}
+
+	int clamp(int value, int lower, int upper)
+    {
+        return value < lower ? lower : (value > upper ? upper : value);
+    }
 }}
