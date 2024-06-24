@@ -3,7 +3,7 @@ name: Build on Push
 on:
   push:
     branches:
-      - no-std  # Adjust this to your main branch name
+      - no-std
 
 jobs:
   windows-job:
@@ -16,7 +16,7 @@ jobs:
       - name: Set up Python 3
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'  # Specify the desired Python version
+          python-version: '3.10'
 
       - name: Set up AMBuilder
         run: |
@@ -37,7 +37,7 @@ jobs:
           ambuild
 
       - name: Upload binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-win32
           path: build/oo_amxx/oo_amxx.dll
@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install 32-bit headers
         run: |
@@ -65,7 +65,7 @@ jobs:
           ambuild
 
       - name: Upload binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-linux
           path: build/oo_amxx_i386/oo_amxx_i386.so
