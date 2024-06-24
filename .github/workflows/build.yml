@@ -39,5 +39,5 @@ jobs:
       - name: Upload an entire directory
         uses: actions/upload-artifact@v3
         with:
-          name: test-build/win32
+          name: build-win32
           path: build/oo_amxx/oo_amxx.dll
