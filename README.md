@@ -1,4 +1,4 @@
-# oo_amxx [![Github All Releases](https://img.shields.io/github/downloads/hollacs/oo_amxx/total.svg)]()
+# oo_amxx ![Build workflow](https://github.com/hollacs/oo_amxx/actions/workflows/build.yml/badge.svg) [![Github All Releases](https://img.shields.io/github/downloads/hollacs/oo_amxx/total.svg)]()
 Object-Oriented Simulation for AMXXPawn<br>
 Idea drafted with BB.O.<br>
 Author: BB.O. & holla
