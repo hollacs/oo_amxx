@@ -51,8 +51,7 @@ jobs:
       - name: Set up AMBuilder
         run: |
           git clone https://github.com/alliedmodders/ambuild
-          cd ambuild
-          python setup.py install
+          pip install ./ambuild
 
       - name: Build project
         run: |
