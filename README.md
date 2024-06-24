@@ -386,3 +386,4 @@ Known issues: (not possible to be fixed)
 - You cannot use default parameter in methods or constructors
 - You cannot use multi-dimensional array in member variables
 - OO_STRING_REF type in method/constructor max length is 255 (but OO_STRING is not affected)
+
