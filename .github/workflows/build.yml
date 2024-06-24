@@ -1,9 +1,15 @@
-name: Build on Push
+name: build
 
 on:
   push:
     branches:
       - no-std
+    paths:
+      - '/**/*.cpp'
+      - '/**/*.h'
+      - '/AMBuilder'
+      - '/AMBuildScript'
+      - '/configure.py'
 
 jobs:
   windows-job:
