@@ -39,7 +39,7 @@ namespace oo
             {
                 ke::AString v_name;
                 v_name.format("%s@%s", current->name.chars(), iter->key.chars());
-                int8_t v_size = iter->value;
+                int v_size = iter->value;
 
                 auto in = obj->vars.findForAdd(v_name.chars());
                 if (!in.found())
@@ -82,7 +82,7 @@ namespace oo
         return r->value.get();
     }
 
-    const Ctor* Manager::FindCtor(Class *cl, uint8_t num_args) const
+    const Ctor* Manager::FindCtor(Class *cl, int num_args) const
     {
         for (size_t i = 0; i < cl->mro.length(); i++)
         {

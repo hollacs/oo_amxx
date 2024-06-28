@@ -29,7 +29,7 @@ namespace oo
         Class*      ToClass(const char* class_name)     const;
         Object*     ToObject(ObjectHash object_hash)    const;
 
-        const Ctor*     FindCtor(Class* cl, uint8_t num_args)   const;
+        const Ctor*     FindCtor(Class* cl, int num_args)   const;
         const Method*   FindMethod(Class* cl, const char* name) const;
         Var*            FindVar(Object *obj, const char *name)  const;
 

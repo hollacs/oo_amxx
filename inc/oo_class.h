@@ -11,14 +11,14 @@
 namespace oo
 {
 	using AmxxForward 	= int;
-	using ArgList 		= ke::Vector<int8_t>;
+	using ArgTypeList 	= ke::Vector<int>;
 	using HookChain		= ke::Vector<AmxxForward>;
 	KE_CONSTEXPR AmxxForward NO_FORWARD = -1;
 
 	struct Ctor
 	{
 		AmxxForward forward_index = NO_FORWARD;
-		ArgList 	args;
+		ArgTypeList args;
 
 		HookChain 	pre;
 		HookChain 	post;
@@ -35,7 +35,7 @@ namespace oo
 	struct Method
 	{
 		AmxxForward forward_index = NO_FORWARD;
-		ArgList 	args;
+		ArgTypeList args;
 		bool 		is_static = false;
 
 		HookChain 	pre;
@@ -52,7 +52,7 @@ namespace oo
 		ke::Vector<Class *> 							super_classes;
 		ke::HashMap<uint32_t, Ctor, IntegerPolicy> 		ctors;
 		ke::HashMap<ke::AString, Ctor *, StringPolicy> 	ctor_map;
-		ke::HashMap<ke::AString, int8_t, StringPolicy> 	vars;
+		ke::HashMap<ke::AString, int, StringPolicy> 	vars;
 		ke::HashMap<ke::AString, Method, StringPolicy> 	methods;
 		ke::Vector<Class *> 							mro;
 
@@ -116,7 +116,7 @@ namespace oo
 			this->dtor = ke::Move(dtor);
 		}
 
-		void AddVar(const char *name, int8_t size)
+		void AddVar(const char *name, int size)
 		{
 			this->instance_size += size;
 			auto in = this->vars.findForAdd(name);
