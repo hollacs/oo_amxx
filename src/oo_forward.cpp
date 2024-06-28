@@ -140,7 +140,7 @@ namespace oo
 				{
 					int len = 0;
 					char *str = MF_GetAmxString(m_amx, m_params[p], 0, &len);
-					len = (type == OO_STRING_EX && len < 256) ? 256 : len + 1;
+					len = (type == OO_STRING_EX && len < 255) ? 255 : len;
 					data->append(ArgData(str, (size_t)len));
 					break;
 				}
