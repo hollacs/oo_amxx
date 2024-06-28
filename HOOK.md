@@ -66,7 +66,7 @@ public OnSnakeTest(a, &b, const c[], d[], e[5])
 	oo_hook_set_param(3, OO_STRING, "33");
 
 	// change d to "44" (OO_STRING_REF can be changed directly)
-	copy(d, 31, "44"); // string_ref can change directly
+	copy(d, 31, "44");
 
 	// change e to {11, 22, 33, 44, 55} (OO_ARRAY can be changed directly)
 	new arr[5] = {11, 22, 33, 44, 55};
