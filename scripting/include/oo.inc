@@ -282,3 +282,8 @@ native oo_hook_dtor(const class[], const public_name[], post=0);
 native oo_hook_set_return(any:value);
 
 native any:oo_hook_get_return();
+
+// example
+// oo_hook_set_param(1, OO_CELL, 1337);
+// oo_hook_set_param(2, OO_STRING, "good game");
+native oo_hook_set_param(param, type, any: ...);
