@@ -1,5 +1,5 @@
 # OO Hook
-In the last commit version, now you can hook all the oo methods that was created by plugin
+In the last commit version, now you can hook all the oo methods that created by plugin
 
 **Please note that this is still under testing**
 
