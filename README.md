@@ -4,7 +4,7 @@ Idea drafted with Hon Fai (aka BB.O.)<br>
 Author: Hon Fai & holla
 
 
-Thanks to [OKAPI module](https://github.com/Arkshine/Okapi/tree/master) authors, I referenced their code to implement using variable arguments in MF_ExecuteForward() and MF_RegisterSpForward()
+Thanks to [OKAPI module](https://github.com/Arkshine/Okapi/tree/master) authors, I referenced their code to implement to use variable arguments in MF_ExecuteForward() and MF_RegisterSpForward()
 
 ## Build
 To build this project, you need to install [ambuild](https://wiki.alliedmods.net/AMBuild)
