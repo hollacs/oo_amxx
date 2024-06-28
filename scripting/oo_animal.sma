@@ -87,6 +87,8 @@ public oo_init()
 		// An override function that returns the sound of a snake
 		oo_mthd(cl, "MakeSound", @stref(msg), @int(len));
 
+		oo_mthd(cl, "Test", OO_CELL, OO_BYREF, OO_STRING, OO_STRING_REF, OO_ARRAY[5]);
+
 		// An override function that returns the number of legs of a snake
 		oo_mthd(cl, "GetLegs");
 	}
@@ -201,6 +203,11 @@ public Snake@GetLegs()
 	return 0;
 }
 
+public Snake@Test(a, &b, const c[], d[], e[5])
+{
+	server_print("Snake@Test(%d, %d, %s, %s, {%d,%d,%d,%d,%d})", a, b, c ,d, e[0], e[1], e[2], e[3], e[4]);
+}
+
 public main()
 {
 	register_plugin("[OO] Animal", "0.1", "holla");
@@ -234,6 +241,10 @@ public main()
 	server_print("Object #%d's classname is %s", animals[0], class);
 
 	server_print("Object #%d %s", animals[0], oo_object_exists(animals[0]) ? "EXISTS" : "DOES NOT EXIST");
+
+	new str[32] = "4";
+	oo_call(animals[3], "Test", 1, 2, "3", str, {1, 2, 3, 4, 5});
+	server_print("str is %s", str);
 
 	for (new i = 0; i < 5; i++)
 	{
