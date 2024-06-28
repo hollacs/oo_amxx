@@ -8,7 +8,7 @@ such as classes, objects, inheritance, etc. <br>
 It uses some special syntax and functions to simulate the concepts of object-oriented programming, <br>
 allowing developers to write amxxpawn code in a more concise and flexible way.<br>
 
-Thanks to [OKAPI module](https://github.com/Arkshine/Okapi/tree/master) authors, I referenced their code to implement to use variable arguments in [MF_ExecuteForward()](https://github.com/hollacs/oo_amxx/blob/29a2387fe127b3618ecb5eac269289815b2046b9/src/oo_forward.cpp#L249) and [MF_RegisterSpForward()](https://github.com/hollacs/oo_amxx/blob/29a2387fe127b3618ecb5eac269289815b2046b9/src/oo_forward.cpp#L67)
+Thanks to [OKAPI module](https://github.com/Arkshine/Okapi/tree/master) authors, I referenced their code to implement to use variable arguments in MF_ExecuteForward() and MF_RegisterSpForward()
 
 ## Build
 To build this project, you need to install [ambuild](https://wiki.alliedmods.net/AMBuild)
