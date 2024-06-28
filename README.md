@@ -1,10 +1,10 @@
 # oo_amxx ![Build workflow](https://github.com/hollacs/oo_amxx/actions/workflows/build.yml/badge.svg) [![Github All Releases](https://img.shields.io/github/downloads/hollacs/oo_amxx/total.svg)]()
 Object-Oriented Simulation for AMXXPawn<br>
-Idea drafted with BB.O.<br>
-Author: BB.O. & holla
+Idea drafted with Hon Fai (aka BB.O.)<br>
+Author: Hon Fai & holla
 
 
-Reference: [OKAPI module](https://github.com/Arkshine/Okapi/tree/master) for using variable arguments in MF_ExecuteForward() and MF_RegisterSpForward()
+Thanks to [OKAPI module](https://github.com/Arkshine/Okapi/tree/master) authors, I referenced their code to implement using variable arguments in MF_ExecuteForward() and MF_RegisterSpForward()
 
 To build this project, you need to install [ambuild](https://wiki.alliedmods.net/AMBuild)
 
@@ -387,5 +387,5 @@ D@Print(hp=100, a=689, b=777)
 Known issues: (not possible to be fixed)
 - You cannot use default parameter in methods or constructors
 - You cannot use multi-dimensional array in member variables
-- OO_STRING_REF type in method/constructor max length is 255 (but OO_STRING is not affected)
+- OO_STRING_REF type in method/constructor max length is 255 (unless you initialize the string array with more than 255 **non-empty** characters)
 
