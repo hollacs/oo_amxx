@@ -387,5 +387,5 @@ D@Print(hp=100, a=689, b=777)
 Known issues: (not possible to be fixed)
 - You cannot use default parameter in methods or constructors
 - You cannot use multi-dimensional array in member variables
-- OO_STRING_REF type in method/constructor max length is 255 (but OO_STRING is not affected)
+- OO_STRING_REF type in method/constructor max length is 255 (unless you initialize the string array with more than 255 **valid** characters)
 
