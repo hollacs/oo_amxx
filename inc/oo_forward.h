@@ -147,7 +147,7 @@ namespace oo
 	{
 	public:
 		Forward(AMX *amx, cell *params, const HookChain *pre, const HookChain *post, ObjectHash _this, const ArgTypeList* args, int start_param) 
-			: amx(amx), params(params), start_param(start_param), arg_list(args), pre(pre), post(post), _this(_this)
+			: m_amx(amx), m_params(params), m_start_param(start_param), m_arg_list(args), m_pre(pre), m_post(post), m_this(_this)
 		{}
 
 		static AmxxForward Create(AMX *amx, const char *callback, const ArgTypeList *args=nullptr);
@@ -163,13 +163,13 @@ namespace oo
 		cell Call(AmxxForward fwd);
 		
 	private:
-		AMX *amx;
-		cell *params;
-		int start_param;
-		const ArgTypeList *arg_list;
-		const HookChain *pre;
-		const HookChain *post;
-		ObjectHash _this;
+		AMX *m_amx;
+		cell *m_params;
+		int m_start_param;
+		const ArgTypeList *m_arg_list;
+		const HookChain *m_pre;
+		const HookChain *m_post;
+		ObjectHash m_this;
 	};
 }
 

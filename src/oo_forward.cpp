@@ -118,28 +118,28 @@ namespace oo
 
 	void Forward::CollectArgDataList(ArgDataList *data)
 	{
-		int num_args = (arg_list == nullptr) ? 0 : arg_list->length();
+		int num_args = (m_arg_list == nullptr) ? 0 : m_arg_list->length();
 
 		for (int i = 0; i < num_args; i++)
 		{
-			int p = i + start_param;
+			int p = i + m_start_param;
 
-			auto type = arg_list->at(i);
+			auto type = m_arg_list->at(i);
 			switch (type)
 			{
 				case OO_CELL:
-					data->append(ArgData(MF_GetAmxAddr(amx, params[p])[0]));
+					data->append(ArgData(MF_GetAmxAddr(m_amx, m_params[p])[0]));
 					break;
 
 				case OO_BYREF:
-					data->append(ArgData(&MF_GetAmxAddr(amx, params[p])[0]));
+					data->append(ArgData(&MF_GetAmxAddr(m_amx, m_params[p])[0]));
 					break;
 
 				case OO_STRING:
 				case OO_STRING_EX:
 				{
 					int len = 0;
-					char *str = MF_GetAmxString(amx, params[p], 0, &len);
+					char *str = MF_GetAmxString(m_amx, m_params[p], 0, &len);
 					len = (type == OO_STRING_EX && len < 256) ? 256 : len + 1;
 					data->append(ArgData(str, (size_t)len));
 					break;
@@ -149,7 +149,7 @@ namespace oo
 				{
 					if (type > OO_CELL)
 					{
-						cell *arr = MF_GetAmxAddr(amx, params[p]);
+						cell *arr = MF_GetAmxAddr(m_amx, m_params[p]);
 						data->append(ArgData(arr));
 					}
 					break;
@@ -175,14 +175,14 @@ namespace oo
 
 	cell Forward::Call(AmxxForward fwd)
 	{
-		PushCall(_this, arg_list);
+		PushCall(m_this, m_arg_list);
 		CollectArgDataList(&GetCall()->arg_data);
 
 		cell result = 0;
-		if (ExecuteHooks(pre) < OO_SUPERCEDE)
+		if (ExecuteHooks(m_pre) < OO_SUPERCEDE)
 		{
 			result = Execute(fwd);
-			ExecuteHooks(post);
+			ExecuteHooks(m_post);
 		}
 		else
 		{
@@ -198,7 +198,7 @@ namespace oo
 	{
 		auto arg_data = &GetCall()->arg_data;
 
-		int num_args = (arg_list == nullptr) ? 0 : arg_list->length();
+		int num_args = (m_arg_list == nullptr) ? 0 : m_arg_list->length();
 		int start = num_args - 1;
 		int end = 0;
 
@@ -207,8 +207,8 @@ namespace oo
 
 		for (int i = start; i >= end; i--)
 		{
-			int p = i + start_param;
-			auto type = arg_list->at(i);
+			int p = i + m_start_param;
+			auto type = m_arg_list->at(i);
 			auto data = &arg_data->at(i);
 
 			switch (type)
@@ -255,14 +255,14 @@ namespace oo
 
 		for (int i = 0; i < num_args; i++)
 		{
-			int p = i + start_param;
-			auto type = arg_list->at(i);
+			int p = i + m_start_param;
+			auto type = m_arg_list->at(i);
 			auto data = &arg_data->at(i);
 
 			switch (type)
 			{
 			case OO_STRING_EX:
-				MF_SetAmxString(amx, params[p], data->ToString(), data->GetStringSize());
+				MF_SetAmxString(m_amx, m_params[p], data->ToString(), data->GetStringSize());
 				break;
 			}
 		}
