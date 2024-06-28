@@ -4,14 +4,12 @@
 #include "oo_manager.h"
 #include "oo_utils.h"
 #include "oo_defs.h"
+#include "oo_forward.h"
+#include <ctime>
 
 namespace oo {
 namespace native
 {
-	// umm... is there a better way to do this?
-	cell g_ret = 0;
-	bool g_ret_set = false;
-
 	cell AMX_NATIVE_CALL native_class(AMX *amx, cell *params)
 	{
 		const char *_class = MF_GetAmxString(amx, params[1], 0, nullptr);
@@ -72,11 +70,11 @@ namespace native
 
 			for (auto i = 1u; i <= num_args; i++)
 			{
-				int8_t size = (*MF_GetAmxAddr(amx, params[i + 2]));
+				int size = (*MF_GetAmxAddr(amx, params[i + 2]));
 				ctor.args.append(size);
 			}
 
-			ctor.forward_index = util::AddMethod(amx, public_name.chars(), &ctor.args);
+			ctor.forward_index = Forward::Create(amx, public_name.chars(), &ctor.args);
 
 			if (ctor.forward_index <= NO_FORWARD)
 			{
@@ -106,7 +104,7 @@ namespace native
 
 		Dtor dtor;
 		{
-			dtor.forward_index = util::AddMethod(amx, public_name.chars());
+			dtor.forward_index = Forward::Create(amx, public_name.chars());
 
 			if (dtor.forward_index <= NO_FORWARD)
 			{
@@ -140,11 +138,11 @@ namespace native
 
 			for (auto i = 1u; i <= num_args; i++)
 			{
-				int8_t size = (*MF_GetAmxAddr(amx, params[i + 2]));
+				int size = (*MF_GetAmxAddr(amx, params[i + 2]));
 				mthd.args.append(size);
 			}
 
-			mthd.forward_index = util::AddMethod(amx, public_name.chars(), &mthd.args);
+			mthd.forward_index = Forward::Create(amx, public_name.chars(), &mthd.args);
 			mthd.is_static = false;
 
 			if (mthd.forward_index <= NO_FORWARD)
@@ -179,11 +177,11 @@ namespace native
 
 			for (auto i = 1u; i <= num_args; i++)
 			{
-				int8_t size = (*MF_GetAmxAddr(amx, params[i + 2]));
+				int size = (*MF_GetAmxAddr(amx, params[i + 2]));
 				mthd.args.append(size);
 			}
 
-			mthd.forward_index = util::AddMethod(amx, public_name.chars(), &mthd.args);
+			mthd.forward_index = Forward::Create(amx, public_name.chars(), &mthd.args);
 			mthd.is_static = true;
 
 			if (mthd.forward_index <= NO_FORWARD)
@@ -201,7 +199,7 @@ namespace native
 	{
 		const char *_class = MF_GetAmxString(amx, params[1], 0, nullptr);
 		const char *_name = MF_GetAmxString(amx, params[2], 1, nullptr);
-		int8_t size = params[3];
+		int size = params[3];
 
 		Class *pclass = Manager::Instance()->ToClass(_class);
 		if (pclass == nullptr)
@@ -242,7 +240,7 @@ namespace native
 		else
 			fwds = &mthd->post;
 
-		AmxxForward fwd_id = util::AddMethod(amx, _public, &mthd->args);
+		AmxxForward fwd_id = Forward::Create(amx, _public, &mthd->args);
 		if (fwd_id <= NO_FORWARD)
 		{
 			MF_LogError(amx, AMX_ERR_NATIVE, "%s(...): Public not found", _public);
@@ -282,7 +280,7 @@ namespace native
 		else
 			fwds = &ctor->post;
 
-		AmxxForward fwd_id = util::AddMethod(amx, _public, &ctor->args);
+		AmxxForward fwd_id = Forward::Create(amx, _public, &ctor->args);
 		if (fwd_id <= NO_FORWARD)
 		{
 			MF_LogError(amx, AMX_ERR_NATIVE, "%s(...): Public not found", _public);
@@ -320,7 +318,7 @@ namespace native
 		else
 			fwds = &dtor->post;
 
-		AmxxForward fwd_id = util::AddMethod(amx, _public);
+		AmxxForward fwd_id = Forward::Create(amx, _public);
 		if (fwd_id <= NO_FORWARD)
 		{
 			MF_LogError(amx, AMX_ERR_NATIVE, "%s(...): Public not found", _public);
@@ -410,13 +408,8 @@ namespace native
 		}
 		else
 		{
-			Manager::Instance()->PushThis(hash);
-			if (util::ExecuteMethodHookChain(amx, params, &result->pre, &result->args, 2) < OO_SUPERCEDE)
-			{
-				util::ExecuteMethod(amx, params, result->forward_index, &result->args, 2);
-				util::ExecuteMethodHookChain(amx, params, &result->post, &result->args, 2);
-			}
-			Manager::Instance()->PopThis();
+			Forward fwd(amx, params, &result->pre, &result->post, hash, &result->args, 2);
+			fwd.Call(result->forward_index);
 		}
 
 		return hash;
@@ -438,13 +431,8 @@ namespace native
 			auto &&dtor = pobj->isa->mro.at(i)->dtor;
 			if (dtor.forward_index > NO_FORWARD)
 			{
-				Manager::Instance()->PushThis(_this);
-				if (util::ExecuteMethodHookChain(amx, params, &dtor.pre) < OO_SUPERCEDE)
-				{
-					util::ExecuteMethod(amx, params, dtor.forward_index);
-					util::ExecuteMethodHookChain(amx, params, &dtor.post);
-				}
-				Manager::Instance()->PopThis();
+				Forward fwd(amx, params, &dtor.pre, &dtor.post, _this, nullptr, 0);
+				fwd.Call(dtor.forward_index);
 			}
 		}
 		
@@ -533,36 +521,91 @@ namespace native
 			return 0;
 		}
 
-		cell ret = 0;
-
-		g_ret = 0;
-		g_ret_set = false;
-
-		Manager::Instance()->PushThis(_this);
-		if (util::ExecuteMethodHookChain(amx, params, &result->pre, &result->args, 3) < OO_SUPERCEDE)
-		{
-			ret = util::ExecuteMethod(amx, params, result->forward_index, &result->args, 3);
-			util::ExecuteMethodHookChain(amx, params, &result->post, &result->args, 3);
-		}
-		else
-		{
-			ret = g_ret;
-		}
-		Manager::Instance()->PopThis();
-
+		Forward fwd(amx, params, &result->pre, &result->post, _this, &result->args, 3);
+		cell ret = fwd.Call(result->forward_index);
 		return ret;
 	}
 
 	cell AMX_NATIVE_CALL native_hook_set_return(AMX *amx, cell *params)
 	{
-		g_ret = params[1];
-		g_ret_set = true;
+		Forward::GetCall()->result = params[1];
 		return 0;
 	}
 
 	cell AMX_NATIVE_CALL native_hook_get_return(AMX *amx, cell *params)
 	{
-		return g_ret;
+		return Forward::GetCall()->result;
+	}
+
+	cell AMX_NATIVE_CALL native_hook_set_param(AMX *amx, cell *params)
+	{
+		// oo_hook_set_param(1, OO_CELL, 3);
+		// oo_hook_set_param(2, OO_FLOAT, 5.5);
+		// oo_hook_set_param(3, OO_STRING, "fuck you");
+		// oo_hook_set_param(4, OO_ARRAY[3], {6, 8, 9});
+
+		int param_index = params[1] - 1;
+
+		auto call = Forward::GetCall();
+		if (param_index < 0 || param_index >= (int)call->arg_list->length())
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "Param index (%d) out of bounds (max: %d)", call->arg_list->length());
+			return 0;
+		}
+
+		int param_type = params[2];
+		if (param_type != call->arg_list->at(param_index))
+		{
+			MF_LogError(amx, AMX_ERR_NATIVE, "Param[%d] type (%d) doesn't match (expected: %d)", param_index + 1, param_type, call->arg_list->at(param_index));
+			return 0;
+		}
+
+		auto arg_data = &call->arg_data;
+		auto data  = &arg_data->at(param_index);
+
+		switch (param_type)
+		{
+			case OO_CELL:
+				*data->ToCell() = *MF_GetAmxAddr(amx, params[3]);
+				return 1;
+			
+			case OO_BYREF:
+				MF_LogError(amx, AMX_ERR_NATIVE, "Param[%d] type is OO_BYREF, you can direct change the value in the function.", param_index + 1);
+				return 0;
+			
+			case OO_STRING:
+			{
+				int len = 0;
+				char *new_str = MF_GetAmxString(amx, params[3], 0, &len);
+				if (len + 1 > (int)data->GetStringSize())
+				{
+					data->FreeData();
+					arg_data->at(param_index) = ArgData(new_str, len);
+				}
+				else
+				{
+					char *str = data->ToString();
+					memcpy(str, new_str, len);
+					str[len] = '\0';
+				}
+				return 1;
+			}
+
+			case OO_STRING_EX:
+				MF_LogError(amx, AMX_ERR_NATIVE, "Param[%d] type is OO_STRING_REF, you can direct change the value in the function.", param_index + 1);
+				return 0;
+
+			default:
+			{
+				if (param_type > OO_CELL)
+					MF_LogError(amx, AMX_ERR_NATIVE, "Param[%d] type is OO_ARRAY, you can direct change the value in the function.", param_index + 1);
+				
+				return 0;
+			}
+		}
+
+		MF_LogError(amx, AMX_ERR_NATIVE, "Param[%d] type is invalid", param_index + 1);
+		return 0;
 	}
 
 	cell AMX_NATIVE_CALL native_get(AMX *amx, cell *params)
@@ -703,7 +746,7 @@ namespace native
 
 	cell AMX_NATIVE_CALL native_this(AMX *amx, cell *params)
 	{
-		return Manager::Instance()->GetThis();
+		return Forward::GetCall()->_this;
 	}
 
 	cell AMX_NATIVE_CALL native_class_exists(AMX* amx, cell *params)
@@ -753,7 +796,7 @@ namespace native
 
 	cell AMX_NATIVE_CALL native_super_ctor(AMX *amx, cell *params)
 	{
-		ObjectHash this_hash = Manager::Instance()->GetThis();
+		ObjectHash this_hash = Forward::GetCall()->_this;
 
 		Object *pthis = Manager::Instance()->ToObject(this_hash);
 		if (pthis == nullptr)
@@ -797,13 +840,8 @@ namespace native
 		}
 		else
 		{
-			Manager::Instance()->PushThis(this_hash);
-			if (util::ExecuteMethodHookChain(amx, params, &result->pre, &result->args, 2) < OO_SUPERCEDE)
-			{
-				util::ExecuteMethod(amx, params, result->forward_index, &result->args, 2);
-				util::ExecuteMethodHookChain(amx, params, &result->post, &result->args, 2);
-			}
-			Manager::Instance()->PopThis();
+			Forward fwd(amx, params, &result->pre, &result->post, this_hash, &result->args, 2);
+			fwd.Call(result->forward_index);
 		}
 
 		return 1;

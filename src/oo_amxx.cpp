@@ -1,6 +1,7 @@
 #include "amxxmodule.h"
 #include "oo_class.h"
 #include "oo_manager.h"
+#include "oo_forward.h"
 #include "oo_natives.h"
 
 void OnAmxxAttach(void)
@@ -14,11 +15,12 @@ void OnAmxxAttach(void)
 		{ "oo_smthd",	oo::native::native_smthd },
 		{ "oo_var",		oo::native::native_var },
 
-		{ "oo_hook_mthd", oo::native::native_hook_mthd },
-		{ "oo_hook_ctor", oo::native::native_hook_ctor },
-		{ "oo_hook_dtor", oo::native::native_hook_dtor },
+		{ "oo_hook_mthd", 		oo::native::native_hook_mthd },
+		{ "oo_hook_ctor", 		oo::native::native_hook_ctor },
+		{ "oo_hook_dtor", 		oo::native::native_hook_dtor },
 		{ "oo_hook_set_return", oo::native::native_hook_set_return },
 		{ "oo_hook_get_return", oo::native::native_hook_get_return },
+		{ "oo_hook_set_param", 	oo::native::native_hook_set_param },
 
 		{ "oo_isa",			oo::native::native_isa },
 		{ "oo_subclass_of",	oo::native::native_subclass_of	},
@@ -115,6 +117,7 @@ void OnPluginsLoaded(void)
 void OnPluginsUnloaded()
 {
 	oo::Manager::Instance()->Clear();
+	oo::Forward::ClearCallStack();
 }
 
 void OnAmxxDetach()
