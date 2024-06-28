@@ -33,10 +33,6 @@ namespace oo
         const Method*   FindMethod(Class* cl, const char* name) const;
         Var*            FindVar(Object *obj, const char *name)  const;
 
-        ObjectHash  GetThis();
-        void        PushThis(ObjectHash next_this);
-        void  PopThis();
-
         ke::HashMap<ke::AString, ke::AutoPtr<Class>, StringPolicy> &GetClasses() 
         {
             return m_classes;
@@ -54,7 +50,6 @@ namespace oo
     private:
         ke::HashMap<ke::AString, ke::AutoPtr<Class>, StringPolicy>  m_classes;
         ke::HashMap<uint32_t, ke::AutoPtr<Object>, IntegerPolicy>   m_objects;
-        ke::Deque<uint32_t> m_these;
     };
 }
 

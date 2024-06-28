@@ -136,28 +136,10 @@ namespace oo
         return nullptr;
     }
 
-    ObjectHash Manager::GetThis()
-    {
-        return m_these.back();
-    }
-
-	void Manager::PushThis(ObjectHash next_this)
-	{
-		m_these.append(next_this);
-	}
-
-    void Manager::PopThis()
-    {
-        m_these.popBack();
-    }
-
     void Manager::Clear()
     {
         m_classes.clear();
         m_objects.clear();
-
-        while (!m_these.empty())
-            m_these.popBack();
     }
 
     Manager *Manager::Instance()
