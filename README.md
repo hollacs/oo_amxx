@@ -1,7 +1,7 @@
 # oo_amxx ![Build workflow](https://github.com/hollacs/oo_amxx/actions/workflows/build.yml/badge.svg) [![Github All Releases](https://img.shields.io/github/downloads/hollacs/oo_amxx/total.svg)]()
 Object-Oriented Simulation for AMXXPawn<br>
-Idea drafted with BB.O.<br>
-Author: BB.O. & holla
+Idea drafted with Hon Fai (aka BB.O.)<br>
+Author: Hon Fai & holla
 
 
 Thanks to [OKAPI module](https://github.com/Arkshine/Okapi/tree/master) authors, I referenced their code to implement using variable arguments in MF_ExecuteForward() and MF_RegisterSpForward()
