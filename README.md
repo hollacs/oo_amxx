@@ -6,6 +6,7 @@ Author: Hon Fai & holla
 
 Thanks to [OKAPI module](https://github.com/Arkshine/Okapi/tree/master) authors, I referenced their code to implement using variable arguments in MF_ExecuteForward() and MF_RegisterSpForward()
 
+## Build
 To build this project, you need to install [ambuild](https://wiki.alliedmods.net/AMBuild)
 
 
@@ -38,9 +39,7 @@ The binary files are in the <ins>Artifacts</ins> section \*\***USE AT YOUR OWN R
 
 See [HOOK.md](https://github.com/hollacs/oo_amxx/blob/no-std/HOOK.md) for more info.
 
----
-
-Usage:
+## Usage
 ```sourcepawn
 #include <amxmodx>
 #include <oo>
